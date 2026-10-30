@@ -5,7 +5,7 @@ data class Voucher(
     val code: String,
     val title: String,
     val discountAmount: Long,
-    val minOrderAmount: Long = 0L,
+    val minOrderAmount: Double = 0.0,
     val expiresAt: String? = null,
-    val status: String = "AVAILABLE"
+    val status: String = "AVAILABLE",
 )

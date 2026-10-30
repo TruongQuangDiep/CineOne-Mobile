@@ -14,4 +14,7 @@ class UseCaseModule(private val repositoryModule: RepositoryModule) {
     // Booking & Voucher UseCases
     val createBookingUseCase by lazy { CreateBookingUseCase(repositoryModule.bookingRepository) }
     val applyVoucherUseCase by lazy { ApplyVoucherUseCase(repositoryModule.voucherRepository) }
+
+    // Ticket UseCases (SCRUM-97)
+    val getTicketsUseCase by lazy { GetTicketsUseCase(repositoryModule.ticketRepository) }
 }

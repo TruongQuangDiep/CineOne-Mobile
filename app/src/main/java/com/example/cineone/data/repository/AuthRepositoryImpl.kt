@@ -5,6 +5,7 @@ import com.example.cineone.core.common.Resource
 import com.example.cineone.data.dto.auth.LoginRequestDto
 import com.example.cineone.data.dto.auth.OtpVerificationDto
 import com.example.cineone.data.dto.auth.RegisterRequestDto
+import com.example.cineone.data.dto.auth.UserDto
 import com.example.cineone.data.mapper.toDomain
 import com.example.cineone.data.remote.auth.AuthApi
 import com.example.cineone.domain.model.User
@@ -57,6 +58,39 @@ class AuthRepositoryImpl(
             else emit(Resource.Error(response.message ?: "Mã OTP không đúng"))
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Lỗi xác thực OTP"))
+        }
+    }
+
+    override fun getProfile(): Flow<Resource<User>> = flow {
+        emit(Resource.Loading)
+        try {
+            val response = authApi.getProfile()
+            if (response.success && response.data != null) {
+                emit(Resource.Success(response.data.toDomain()))
+            } else {
+                emit(Resource.Error(response.message ?: "Không thể lấy thông tin cá nhân"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
+        }
+    }
+
+    override fun updateProfile(fullName: String, phone: String?, address: String?): Flow<Resource<User>> = flow {
+        emit(Resource.Loading)
+        try {
+            val requestDto = UserDto(
+                fullName = fullName,
+                phone = phone,
+                address = address
+            )
+            val response = authApi.updateProfile(requestDto)
+            if (response.success && response.data != null) {
+                emit(Resource.Success(response.data.toDomain()))
+            } else {
+                emit(Resource.Error(response.message ?: "Cập nhật thông tin thất bại"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
         }
     }
 }
