@@ -24,7 +24,9 @@ class AuthRepositoryImpl(
             val response = authApi.login(LoginRequestDto(email, pass))
             if (response.success && response.data != null) {
                 val authData = response.data
-                sessionManager.saveAuthToken(authData.token, authData.user.userId, authData.user.email)
+                authData.token?.let { token ->
+                    sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
+                }
                 emit(Resource.Success(authData.user.toDomain()))
             } else {
                 emit(Resource.Error(response.message ?: "Đăng nhập thất bại"))
@@ -40,7 +42,9 @@ class AuthRepositoryImpl(
             val response = authApi.register(RegisterRequestDto(email, pass, name, phone))
             if (response.success && response.data != null) {
                 val authData = response.data
-                sessionManager.saveAuthToken(authData.token, authData.user.userId, authData.user.email)
+                authData.token?.let { token ->
+                    sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
+                }
                 emit(Resource.Success(authData.user.toDomain()))
             } else {
                 emit(Resource.Error(response.message ?: "Đăng ký thất bại"))
@@ -50,12 +54,15 @@ class AuthRepositoryImpl(
         }
     }
 
-    override fun verifyOtp(email: String, otp: String): Flow<Resource<Unit>> = flow {
+    override fun verifyOtp(email: String, otp: String, type: String): Flow<Resource<Unit>> = flow {
         emit(Resource.Loading)
         try {
-            val response = authApi.verifyOtp(OtpVerificationDto(email, otp))
-            if (response.success) emit(Resource.Success(Unit))
-            else emit(Resource.Error(response.message ?: "Mã OTP không đúng"))
+            val response = authApi.verifyOtp(OtpVerificationDto(email = email, otp = otp, type = type))
+            if (response.success) {
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(response.message ?: "Mã OTP không đúng hoặc đã hết hạn"))
+            }
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Lỗi xác thực OTP"))
         }
@@ -88,6 +95,34 @@ class AuthRepositoryImpl(
                 emit(Resource.Success(response.data.toDomain()))
             } else {
                 emit(Resource.Error(response.message ?: "Cập nhật thông tin thất bại"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
+        }
+    }
+
+    override fun forgotPassword(email: String): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading)
+        try {
+            val response = authApi.forgotPassword(email)
+            if (response.success) {
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(response.message ?: "Gửi mã OTP thất bại"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
+        }
+    }
+
+    override fun resetPassword(email: String, newPassword: String): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading)
+        try {
+            val response = authApi.resetPassword(email, newPassword)
+            if (response.success) {
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(response.message ?: "Đặt lại mật khẩu thất bại"))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))

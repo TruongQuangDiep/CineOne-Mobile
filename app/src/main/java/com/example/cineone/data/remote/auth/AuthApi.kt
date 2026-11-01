@@ -37,4 +37,15 @@ class AuthApi(private val client: HttpClient) {
             setBody(request)
         }.body()
     }
+
+    suspend fun forgotPassword(email: String): ApiResponseDto<Unit> {
+        return client.post(ApiConfig.Auth.FORGOT_PASSWORD) {
+            setBody(ForgotPasswordRequestDto(email))
+        }.body()
+    }
+    suspend fun resetPassword(email: String, newPassword: String): ApiResponseDto<Unit> {
+        return client.post(ApiConfig.Auth.RESET_PASSWORD) {
+            setBody(ResetPasswordRequestDto(email, newPassword))
+        }.body()
+    }
 }
