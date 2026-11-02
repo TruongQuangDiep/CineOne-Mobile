@@ -23,4 +23,17 @@ class RepositoryModule(private val networkModule: NetworkModule) {
     val ticketRepository: TicketRepository by lazy {
         TicketRepositoryImpl(networkModule.ticketApi)
     }
+
+    // Catalog Repositories (SCRUM-23)
+    val movieRepository: MovieRepository by lazy {
+        MovieRepositoryImpl(networkModule.movieApi)
+    }
+
+    val cinemaRepository: CinemaRepository by lazy {
+        CinemaRepositoryImpl(networkModule.cinemaApi)
+    }
+
+    val showtimeRepository: ShowtimeRepository by lazy {
+        ShowtimeRepositoryImpl(networkModule.showtimeApi)
+    }
 }

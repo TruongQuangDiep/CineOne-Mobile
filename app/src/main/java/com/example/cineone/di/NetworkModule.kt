@@ -6,7 +6,10 @@ import com.example.cineone.core.auth.SessionManager
 import com.example.cineone.core.network.HttpClientFactory
 import com.example.cineone.data.remote.auth.AuthApi
 import com.example.cineone.data.remote.booking.BookingApi
+import com.example.cineone.data.remote.cinema.CinemaApi
+import com.example.cineone.data.remote.movie.MovieApi
 import com.example.cineone.data.remote.seat.SeatApi
+import com.example.cineone.data.remote.showtime.ShowtimeApi
 import com.example.cineone.data.remote.ticket.TicketApi
 import com.example.cineone.data.remote.voucher.VoucherApi
 import io.ktor.client.*
@@ -21,4 +24,9 @@ class NetworkModule(context: Context) {
     val bookingApi by lazy { BookingApi(httpClient) }
     val voucherApi by lazy { VoucherApi(httpClient) }
     val ticketApi by lazy { TicketApi(httpClient) }
+
+    // Catalog APIs (SCRUM-23)
+    val movieApi by lazy { MovieApi(httpClient) }
+    val cinemaApi by lazy { CinemaApi(httpClient) }
+    val showtimeApi by lazy { ShowtimeApi(httpClient) }
 }

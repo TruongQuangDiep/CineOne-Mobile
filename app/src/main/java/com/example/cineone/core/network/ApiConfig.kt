@@ -34,4 +34,26 @@ object ApiConfig {
         const val MY_TICKETS = "/api/v1/tickets/my-tickets"
         const val DETAIL = "/api/v1/tickets"
     }
+
+    object Movie {
+        const val LIST = "/api/v1/movies"
+        const val DETAIL = "/api/v1/movies"
+        fun detail(id: Long) = "/api/v1/movies/$id"
+    }
+
+    object Cinema {
+        const val LIST = "/api/v1/cinemas"
+        const val DETAIL = "/api/v1/cinemas"
+        fun detail(id: Long) = "/api/v1/cinemas/$id"
+        fun fnbs(id: Long) = "/api/v1/cinemas/$id/fnbs"
+    }
+
+    object Showtime {
+        const val LIST = "/api/v1/showtimes"
+    }
+
+    object Fnb {
+        const val BY_CINEMA = "/api/v1/cinemas"
+        fun byCinema(cinemaId: Long) = "/api/v1/cinemas/$cinemaId/fnbs"
+    }
 }
