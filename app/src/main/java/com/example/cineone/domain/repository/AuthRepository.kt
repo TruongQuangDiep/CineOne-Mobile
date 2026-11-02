@@ -7,7 +7,9 @@ import kotlinx.coroutines.flow.Flow
 interface AuthRepository {
     fun login(email: String, pass: String): Flow<Resource<User>>
     fun register(email: String, pass: String, name: String, phone: String?): Flow<Resource<User>>
-    fun verifyOtp(email: String, otp: String): Flow<Resource<Unit>>
+    fun verifyOtp(email: String, otp: String, type: String = "EMAIL_VERIFY"): Flow<Resource<Unit>>
     fun getProfile(): Flow<Resource<User>>
     fun updateProfile(fullName: String, phone: String?, address: String?): Flow<Resource<User>>
+    fun forgotPassword(email: String): Flow<Resource<Unit>>
+    fun resetPassword(email: String, newPassword: String): Flow<Resource<Unit>>
 }
