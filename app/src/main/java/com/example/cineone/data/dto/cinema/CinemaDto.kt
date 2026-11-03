@@ -4,8 +4,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CinemaDto(
-    val id: String? = null,
-    val name: String? = null,
-    val address: String? = null,
-    val city: String? = null
+    val cinemaId: Long = 0L,
+    val brandId: Long? = null,
+    val brandName: String? = null,
+    val brandLogoUrl: String? = null,
+    val name: String = "",
+    val address: String = "",
+    val city: String = "",
+    val phone: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val roomCount: Long = 0L,
+    val status: String = "ACTIVE",
 )

@@ -17,4 +17,11 @@ class UseCaseModule(private val repositoryModule: RepositoryModule) {
 
     // Ticket UseCases (SCRUM-97)
     val getTicketsUseCase by lazy { GetTicketsUseCase(repositoryModule.ticketRepository) }
+
+    // Catalog UseCases (SCRUM-23)
+    val getMoviesUseCase by lazy { GetMoviesUseCase(repositoryModule.movieRepository) }
+    val getMovieDetailUseCase by lazy { GetMovieDetailUseCase(repositoryModule.movieRepository) }
+    val getCinemasUseCase by lazy { GetCinemasUseCase(repositoryModule.cinemaRepository) }
+    val getCinemaFnbsUseCase by lazy { GetCinemaFnbsUseCase(repositoryModule.cinemaRepository) }
+    val getShowtimesUseCase by lazy { GetShowtimesUseCase(repositoryModule.showtimeRepository) }
 }
