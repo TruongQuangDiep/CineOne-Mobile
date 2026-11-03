@@ -14,6 +14,8 @@ import com.example.cineone.ui.auth.OtpScreen
 import com.example.cineone.ui.auth.RegisterScreen
 import com.example.cineone.ui.auth.ResetPasswordScreen
 import com.example.cineone.ui.home.HomeScreen
+import com.example.cineone.ui.showtime.ShowtimeScreen
+import com.example.cineone.ui.seat.SeatSelectionScreen
 
 @Composable
 fun AppNavGraph(
@@ -78,6 +80,64 @@ fun AppNavGraph(
         // 6. Màn hình Trang chủ (Khi đăng nhập xong hoặc chọn "Khám phá với tư cách Khách")
         composable(Screen.Home.route) {
             HomeScreen(navController = navController)
+        }
+
+        // 7. Màn hình Chọn suất chiếu
+        composable(
+            route = Screen.Showtime.route,
+            arguments = listOf(
+                navArgument("movieId") { type = NavType.LongType },
+                navArgument("movieTitle") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getLong("movieId") ?: 0L
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            ShowtimeScreen(
+                navController = navController,
+                movieId = movieId,
+                movieTitle = movieTitle
+            )
+        }
+
+        // 8. Màn hình Sơ đồ chọn ghế Realtime
+        composable(
+            route = Screen.SeatSelection.route,
+            arguments = listOf(
+                navArgument("showtimeId") { type = NavType.LongType },
+                navArgument("movieTitle") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("cinemaName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("startTime") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("basePrice") {
+                    type = NavType.StringType
+                    defaultValue = "85000"
+                }
+            )
+        ) { backStackEntry ->
+            val showtimeId = backStackEntry.arguments?.getLong("showtimeId") ?: 0L
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            val cinemaName = backStackEntry.arguments?.getString("cinemaName") ?: ""
+            val startTime = backStackEntry.arguments?.getString("startTime") ?: ""
+            val basePrice = backStackEntry.arguments?.getString("basePrice") ?: "85000"
+            SeatSelectionScreen(
+                navController = navController,
+                showtimeId = showtimeId,
+                movieTitle = movieTitle,
+                cinemaName = cinemaName,
+                startTime = startTime,
+                basePriceStr = basePrice
+            )
         }
     }
 }
