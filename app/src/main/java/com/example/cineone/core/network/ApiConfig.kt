@@ -50,6 +50,7 @@ object ApiConfig {
 
     object Showtime {
         const val LIST = "/api/v1/showtimes"
+        fun seats(showtimeId: Long) = "/api/v1/showtimes/$showtimeId/seats"
     }
 
     object Fnb {

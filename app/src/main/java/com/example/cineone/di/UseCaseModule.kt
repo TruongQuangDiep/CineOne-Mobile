@@ -8,6 +8,7 @@ class UseCaseModule(private val repositoryModule: RepositoryModule) {
     val registerUseCase by lazy { RegisterUseCase(repositoryModule.authRepository) }
 
     // Seat UseCases
+    val getSeatsUseCase by lazy { GetSeatsUseCase(repositoryModule.seatRepository) }
     val holdSeatsUseCase by lazy { HoldSeatsUseCase(repositoryModule.seatRepository) }
     val releaseSeatsUseCase by lazy { ReleaseSeatsUseCase(repositoryModule.seatRepository) }
 

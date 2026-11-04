@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "944001127122",
+    "project_id": "cineone-app-870cc",
+    "storage_bucket": "cineone-app-870cc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:944001127122:android:5d08c308924d72a4e2530b",
+        "android_client_info": {
+          "package_name": "com.example.cineone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFDW9wXU0W50GY1UQlmjucps1R_rJDfl4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

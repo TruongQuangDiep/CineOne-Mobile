@@ -3,6 +3,7 @@ package com.example.cineone.data.remote.seat
 import com.example.cineone.core.network.ApiConfig
 import com.example.cineone.data.dto.ApiResponseDto
 import com.example.cineone.data.dto.seat.HeldSeatDto
+import com.example.cineone.data.dto.seat.SeatDto
 import com.example.cineone.data.dto.seat.SeatHoldRequestDto
 import com.example.cineone.data.dto.seat.SeatHoldResponseDto
 import io.ktor.client.*
@@ -28,5 +29,9 @@ class SeatApi(private val client: HttpClient) {
         return client.get(ApiConfig.Seat.HELD) {
             parameter("showtimeId", showtimeId)
         }.body()
+    }
+
+    suspend fun getShowtimeSeats(showtimeId: Long): ApiResponseDto<List<SeatDto>> {
+        return client.get(ApiConfig.Showtime.seats(showtimeId)).body()
     }
 }
