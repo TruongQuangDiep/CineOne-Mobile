@@ -13,7 +13,7 @@ object HttpClientFactory {
     fun create(authTokenProvider: AuthTokenProvider): HttpClient {
         return HttpClient {
             defaultRequest {
-                url(ApiConfig.BASE_URL)
+                url(ApiConfig.activeBaseUrl())
                 contentType(ContentType.Application.Json)
                 val token = authTokenProvider.getToken()
                 if (!token.isNullOrBlank()) {

@@ -6,9 +6,13 @@ import com.example.cineone.domain.model.Voucher
 fun VoucherDto.toDomain(): Voucher = Voucher(
     voucherId = voucherId,
     code = code,
-    title = title,
-    discountAmount =  discountAmount.toLong(),
+    title = title.orEmpty(),
+    imageUrl = imageUrl,
+    discountType = discountType?.ifBlank { "FIXED" } ?: "FIXED",
+    discountAmount = discountAmount.toLong(),
     minOrderAmount = minOrderAmount,
+    maxDiscount = maxDiscount,
+    startAt = startAt,
     expiresAt = expiresAt,
     status = status
 )

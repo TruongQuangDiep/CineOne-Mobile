@@ -37,4 +37,3 @@ fun MovieDetailDto.toDomain(): Movie = Movie(
     castInfo = castInfo.orEmpty(),
     status = status,
 )
-

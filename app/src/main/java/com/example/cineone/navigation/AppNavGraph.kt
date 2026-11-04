@@ -14,8 +14,10 @@ import com.example.cineone.ui.auth.OtpScreen
 import com.example.cineone.ui.auth.RegisterScreen
 import com.example.cineone.ui.auth.ResetPasswordScreen
 import com.example.cineone.ui.home.HomeScreen
-import com.example.cineone.ui.showtime.ShowtimeScreen
+import com.example.cineone.ui.movie.MovieDetailScreen
+import com.example.cineone.ui.movie.MovieListScreen
 import com.example.cineone.ui.seat.SeatSelectionScreen
+import com.example.cineone.ui.showtime.ShowtimeScreen
 
 @Composable
 fun AppNavGraph(
@@ -80,6 +82,37 @@ fun AppNavGraph(
         // 6. Màn hình Trang chủ (Khi đăng nhập xong hoặc chọn "Khám phá với tư cách Khách")
         composable(Screen.Home.route) {
             HomeScreen(navController = navController)
+        }
+
+        // 6.1. Màn hình Chi tiết phim (SCRUM-87)
+        composable(
+            route = Screen.MovieDetail.route,
+            arguments = listOf(
+                navArgument("movieId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getLong("movieId") ?: 0L
+            MovieDetailScreen(
+                navController = navController,
+                movieId = movieId
+            )
+        }
+
+        // 6.2. Màn hình Danh sách phim ("Xem tất cả >" từ Trang chủ)
+        composable(
+            route = Screen.MovieList.route,
+            arguments = listOf(
+                navArgument("status") {
+                    type = NavType.StringType
+                    defaultValue = "NOW_SHOWING"
+                }
+            )
+        ) { backStackEntry ->
+            val status = backStackEntry.arguments?.getString("status") ?: "NOW_SHOWING"
+            MovieListScreen(
+                navController = navController,
+                initialStatus = status
+            )
         }
 
         // 7. Màn hình Chọn suất chiếu

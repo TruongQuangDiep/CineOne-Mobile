@@ -8,14 +8,19 @@ data class VoucherDto(
     val voucherId: Long = 0L,
     val code: String = "",
     @SerialName("description")
-    val title: String = "",
+    val title: String? = null,
+    val imageUrl: String? = null,
+    val discountType: String? = null,
     @SerialName("discountValue")
     val discountAmount: Double = 0.0,
     @SerialName("minOrder")
     val minOrderAmount: Double = 0.0,
+    val maxDiscount: Double? = null,
+    val startAt: String? = null,
     @SerialName("endAt")
     val expiresAt: String? = null,
-    val status: String = "AVAILABLE",
+    val usageLimit: Int? = null,
+    val status: String = "ACTIVE",
 )
 
 @Serializable
