@@ -21,4 +21,3 @@ data class Movie(
 }
 
 typealias MovieDetail = Movie
-
