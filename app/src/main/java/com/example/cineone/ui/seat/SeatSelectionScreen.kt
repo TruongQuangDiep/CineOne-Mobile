@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.domain.model.Seat
+import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
 
@@ -37,6 +38,7 @@ import java.text.DecimalFormat
 fun SeatSelectionScreen(
     navController: NavController,
     showtimeId: Long,
+    cinemaId: Long = 1L,
     movieTitle: String = "",
     cinemaName: String = "",
     startTime: String = "",
@@ -120,7 +122,22 @@ fun SeatSelectionScreen(
 
                     Button(
                         onClick = {
-                            // Sẽ chuyển tiếp sang màn hình F&B (SCRUM-28)
+                            // SCRUM-28: CHUYỂN TIẾP SANG CHỌN BẮP NƯỚC & TẠM TÍNH
+                            val selectedSeatNames = uiState.selectedSeatIds.mapNotNull { id ->
+                                uiState.seatsByRow.values.flatten().find { it.seatId == id }?.let { "${it.seatRow}${it.seatNumber}" }
+                            }.sorted().joinToString(", ")
+
+                            navController.navigate(
+                                Screen.FoodSelection.createRoute(
+                                    cinemaId = cinemaId,
+                                    showtimeId = showtimeId,
+                                    movieTitle = movieTitle,
+                                    cinemaName = cinemaName,
+                                    startTime = startTime,
+                                    seatNames = selectedSeatNames,
+                                    seatPrice = uiState.totalPrice.toString()
+                                )
+                            )
                         },
                         enabled = uiState.selectedSeatIds.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(
