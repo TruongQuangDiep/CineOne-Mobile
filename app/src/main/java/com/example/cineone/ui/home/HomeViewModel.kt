@@ -9,10 +9,13 @@ import com.example.cineone.CineOneApp
 import com.example.cineone.core.common.Resource
 import com.example.cineone.core.util.CurrencyUtils
 import com.example.cineone.core.util.DateTimeUtils
+import com.example.cineone.data.repository.CinemaRepositoryImpl
 import com.example.cineone.domain.model.Movie
 import com.example.cineone.domain.model.Voucher
 import com.example.cineone.domain.repository.VoucherRepository
+import com.example.cineone.domain.usecase.GetCinemasUseCase
 import com.example.cineone.domain.usecase.GetMoviesUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,7 +62,8 @@ data class HomeUiState(
 
 class HomeViewModel(
     private val getMoviesUseCase: GetMoviesUseCase,
-    private val voucherRepository: VoucherRepository? = null
+    private val voucherRepository: VoucherRepository? = null,
+    private val getCinemasUseCase: GetCinemasUseCase? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -69,12 +73,38 @@ class HomeViewModel(
 
     init {
         loadHomeData()
+        prewarmCinemasInBackground()
     }
 
     fun loadHomeData() {
         loadFeaturedMovies(_uiState.value.searchQuery.ifBlank { null })
         loadMoviesByTab(_uiState.value.selectedTab, _uiState.value.searchQuery)
         loadPromotions()
+    }
+
+    private fun prewarmCinemasInBackground() {
+        val cinemasUseCase = getCinemasUseCase ?: return
+        if (CinemaRepositoryImpl.isFullListFresh()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            var page = 0
+            while (page < 10) {
+                var count = 0
+                var hadError = false
+                cinemasUseCase(q = null, city = null, status = "ACTIVE", page = page).collect { res ->
+                    when (res) {
+                        is Resource.Success -> count = res.data?.size ?: 0
+                        is Resource.Error -> hadError = true
+                        is Resource.Loading -> Unit
+                    }
+                }
+                if (hadError) break
+                if (count < 10) {
+                    CinemaRepositoryImpl.markFullCatalogLoaded()
+                    break
+                }
+                page++
+            }
+        }
     }
 
     fun onTabSelected(tab: HomeMovieTab) {
@@ -225,7 +255,8 @@ class HomeViewModel(
                 val app = CineOneApp.instance
                 HomeViewModel(
                     getMoviesUseCase = app.useCaseModule.getMoviesUseCase,
-                    voucherRepository = app.repositoryModule.voucherRepository
+                    voucherRepository = app.repositoryModule.voucherRepository,
+                    getCinemasUseCase = app.useCaseModule.getCinemasUseCase
                 )
             }
         }

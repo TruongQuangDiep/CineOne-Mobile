@@ -13,11 +13,14 @@ import com.example.cineone.ui.auth.LoginScreen
 import com.example.cineone.ui.auth.OtpScreen
 import com.example.cineone.ui.auth.RegisterScreen
 import com.example.cineone.ui.auth.ResetPasswordScreen
+import com.example.cineone.ui.cinema.CinemaDetailScreen
+import com.example.cineone.ui.cinema.CinemaListScreen
+import com.example.cineone.ui.food.FoodSelectionScreen
 import com.example.cineone.ui.home.HomeScreen
 import com.example.cineone.ui.movie.MovieDetailScreen
 import com.example.cineone.ui.movie.MovieListScreen
+import com.example.cineone.ui.movie.MovieSearchScreen
 import com.example.cineone.ui.seat.SeatSelectionScreen
-import com.example.cineone.ui.food.FoodSelectionScreen
 import com.example.cineone.ui.showtime.ShowtimeScreen
 
 @Composable
@@ -116,7 +119,72 @@ fun AppNavGraph(
             )
         }
 
-        // 7. Màn hình Chọn suất chiếu
+        // 6.3. Màn hình Tìm kiếm đa tiêu chí & Vị trí (SCRUM-25 / CINE-21)
+        composable(
+            route = Screen.MovieSearch.route,
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("tab") {
+                    type = NavType.StringType
+                    defaultValue = "CINEMA"
+                },
+                navArgument("locationMode") {
+                    type = NavType.StringType
+                    defaultValue = "NONE"
+                }
+            )
+        ) { backStackEntry ->
+            val query = backStackEntry.arguments?.getString("query") ?: ""
+            val tab = backStackEntry.arguments?.getString("tab") ?: "CINEMA"
+            val locationMode = backStackEntry.arguments?.getString("locationMode") ?: "NONE"
+            MovieSearchScreen(
+                navController = navController,
+                initialQuery = query,
+                initialTab = tab,
+                initialLocationMode = locationMode
+            )
+        }
+
+        // 6.4. Màn hình Chọn theo rạp & Chi tiết rạp
+        composable(Screen.CinemaList.route) {
+            CinemaListScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.CinemaDetail.route,
+            arguments = listOf(
+                navArgument("cinemaId") { type = NavType.LongType },
+                navArgument("cinemaName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("date") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("timeSlot") {
+                    type = NavType.StringType
+                    defaultValue = "ALL"
+                }
+            )
+        ) { backStackEntry ->
+            val cinemaId = backStackEntry.arguments?.getLong("cinemaId") ?: 0L
+            val cinemaName = backStackEntry.arguments?.getString("cinemaName") ?: ""
+            val date = backStackEntry.arguments?.getString("date") ?: ""
+            val timeSlot = backStackEntry.arguments?.getString("timeSlot") ?: "ALL"
+            CinemaDetailScreen(
+                navController = navController,
+                cinemaId = cinemaId,
+                cinemaName = cinemaName,
+                initialDate = date,
+                initialTimeSlot = timeSlot
+            )
+        }
+
+        // 7. Màn hình Chọn suất chiếu (Duy trì tiêu chí tìm kiếm từ SCRUM-25)
         composable(
             route = Screen.Showtime.route,
             arguments = listOf(
@@ -124,15 +192,39 @@ fun AppNavGraph(
                 navArgument("movieTitle") {
                     type = NavType.StringType
                     defaultValue = ""
+                },
+                navArgument("date") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("timeSlot") {
+                    type = NavType.StringType
+                    defaultValue = "ALL"
+                },
+                navArgument("locationMode") {
+                    type = NavType.StringType
+                    defaultValue = "NONE"
+                },
+                navArgument("city") {
+                    type = NavType.StringType
+                    defaultValue = ""
                 }
             )
         ) { backStackEntry ->
             val movieId = backStackEntry.arguments?.getLong("movieId") ?: 0L
             val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            val date = backStackEntry.arguments?.getString("date") ?: ""
+            val timeSlot = backStackEntry.arguments?.getString("timeSlot") ?: "ALL"
+            val locationMode = backStackEntry.arguments?.getString("locationMode") ?: "NONE"
+            val city = backStackEntry.arguments?.getString("city") ?: ""
             ShowtimeScreen(
                 navController = navController,
                 movieId = movieId,
-                movieTitle = movieTitle
+                movieTitle = movieTitle,
+                initialDate = date,
+                initialTimeSlot = timeSlot,
+                initialLocationMode = locationMode,
+                initialCity = city
             )
         }
 

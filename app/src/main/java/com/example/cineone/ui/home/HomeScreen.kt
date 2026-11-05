@@ -46,6 +46,7 @@ import androidx.navigation.NavController
 import com.example.cineone.CineOneApp
 import com.example.cineone.domain.model.Movie
 import com.example.cineone.navigation.Screen
+import com.example.cineone.ui.cinema.CinemaListScreen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
 import com.example.cineone.ui.common.LoadingView
@@ -94,7 +95,16 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(innerPadding),
                     onSearchQueryChange = viewModel::onSearchQueryChanged,
-                    onSearchSubmit = viewModel::submitSearch,
+                    onSearchSubmit = {
+                        navController.navigate(
+                            Screen.MovieSearch.createRoute(query = uiState.searchQuery)
+                        )
+                    },
+                    onOpenSearchScreen = {
+                        navController.navigate(
+                            Screen.MovieSearch.createRoute(query = uiState.searchQuery)
+                        )
+                    },
                     onAiAssistantClick = { showAiQuickDialog = true },
                     onMovieStatusTabSelected = viewModel::onTabSelected,
                     onMovieClick = { movieId ->
@@ -107,6 +117,16 @@ fun HomeScreen(
                     },
                     onPromotionClick = { promo -> selectedPromo = promo },
                     onRetry = viewModel::loadHomeData
+                )
+            }
+
+            HomeBottomTab.CINEMA -> {
+                CinemaListScreen(
+                    navController = navController,
+                    isEmbeddedInHome = true,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 )
             }
 
@@ -253,6 +273,7 @@ private fun HomeTabContent(
     modifier: Modifier = Modifier,
     onSearchQueryChange: (String) -> Unit,
     onSearchSubmit: () -> Unit,
+    onOpenSearchScreen: () -> Unit = {},
     onAiAssistantClick: () -> Unit,
     onMovieStatusTabSelected: (HomeMovieTab) -> Unit,
     onMovieClick: (Long) -> Unit,
@@ -291,6 +312,7 @@ private fun HomeTabContent(
                     .clip(RoundedCornerShape(21.dp))
                     .background(CineInputBackground)
                     .border(1.dp, CineBorder, RoundedCornerShape(21.dp))
+                    .clickable { onOpenSearchScreen() }
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
@@ -305,45 +327,14 @@ private fun HomeTabContent(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (uiState.searchQuery.isEmpty()) {
-                            Text(
-                                text = "Tìm phim, rạp ...",
-                                color = CineTextGray,
-                                fontSize = 13.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        BasicTextField(
-                            value = uiState.searchQuery,
-                            onValueChange = onSearchQueryChange,
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                color = CineTextWhite,
-                                fontSize = 13.sp
-                            ),
-                            cursorBrush = SolidColor(CineRedPrimary),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(
-                                onSearch = {
-                                    focusManager.clearFocus()
-                                    onSearchSubmit()
-                                }
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "Xóa",
-                            tint = CineTextGray,
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clickable { onSearchQueryChange("") }
-                        )
-                    }
+                    Text(
+                        text = uiState.searchQuery.ifEmpty { "Tìm phim, rạp ..." },
+                        color = if (uiState.searchQuery.isEmpty()) CineTextGray else CineTextWhite,
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 

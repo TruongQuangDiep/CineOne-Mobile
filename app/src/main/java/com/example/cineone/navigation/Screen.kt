@@ -1,5 +1,8 @@
 package com.example.cineone.navigation
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
@@ -18,8 +21,47 @@ sealed class Screen(val route: String) {
         fun createRoute(status: String = "NOW_SHOWING") = "movie_list?status=$status"
     }
 
-    object Showtime : Screen("showtime/{movieId}?movieTitle={movieTitle}") {
-        fun createRoute(movieId: Long, movieTitle: String = "") = "showtime/$movieId?movieTitle=$movieTitle"
+    object MovieSearch : Screen("movie_search?query={query}&tab={tab}&locationMode={locationMode}") {
+        fun createRoute(
+            query: String = "",
+            tab: String = "CINEMA",
+            locationMode: String = "NONE"
+        ): String {
+            val encodedQuery = encodeParam(query)
+            return "movie_search?query=$encodedQuery&tab=$tab&locationMode=$locationMode"
+        }
+    }
+
+    object CinemaList : Screen("cinema_list")
+
+    object CinemaDetail : Screen("cinema_detail/{cinemaId}?cinemaName={cinemaName}&date={date}&timeSlot={timeSlot}") {
+        fun createRoute(
+            cinemaId: Long,
+            cinemaName: String = "",
+            date: String = "",
+            timeSlot: String = "ALL"
+        ): String {
+            val encodedName = encodeParam(cinemaName)
+            return "cinema_detail/$cinemaId?cinemaName=$encodedName&date=$date&timeSlot=$timeSlot"
+        }
+    }
+
+    object Showtime : Screen("showtime/{movieId}?movieTitle={movieTitle}&date={date}&timeSlot={timeSlot}&locationMode={locationMode}&city={city}") {
+        fun createRoute(
+            movieId: Long,
+            movieTitle: String = "",
+            date: String = "",
+            timeSlot: String = "ALL",
+            locationMode: String = "NONE",
+            city: String = ""
+        ): String {
+            if (date.isEmpty() && timeSlot == "ALL" && locationMode == "NONE" && city.isEmpty()) {
+                return "showtime/$movieId?movieTitle=$movieTitle"
+            }
+            val encodedTitle = encodeParam(movieTitle)
+            val encodedCity = encodeParam(city)
+            return "showtime/$movieId?movieTitle=$encodedTitle&date=$date&timeSlot=$timeSlot&locationMode=$locationMode&city=$encodedCity"
+        }
     }
 
     object SeatSelection : Screen("seat_selection/{showtimeId}?cinemaId={cinemaId}&movieTitle={movieTitle}&cinemaName={cinemaName}&startTime={startTime}&basePrice={basePrice}") {
@@ -43,5 +85,14 @@ sealed class Screen(val route: String) {
             seatNames: String = "",
             seatPrice: String = "0"
         ) = "food_selection/$cinemaId?showtimeId=$showtimeId&movieTitle=$movieTitle&cinemaName=$cinemaName&startTime=$startTime&seatNames=$seatNames&seatPrice=$seatPrice"
+    }
+}
+
+private fun encodeParam(value: String): String {
+    if (value.isEmpty()) return ""
+    return try {
+        URLEncoder.encode(value, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+    } catch (_: Exception) {
+        value
     }
 }
