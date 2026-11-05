@@ -166,10 +166,10 @@ fun ShowtimeScreen(
                                     cinemaName = cinemaName,
                                     showtimes = showtimes,
                                     onShowtimeClick = { showtime ->
-                                        // Chuyển sang màn hình chọn ghế (SCRUM-93)
                                         navController.navigate(
                                             Screen.SeatSelection.createRoute(
                                                 showtimeId = showtime.showtimeId,
+                                                cinemaId = showtime.cinemaId,
                                                 movieTitle = movieTitle,
                                                 cinemaName = cinemaName,
                                                 startTime = showtime.startTime,

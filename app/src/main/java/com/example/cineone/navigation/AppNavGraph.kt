@@ -17,6 +17,7 @@ import com.example.cineone.ui.home.HomeScreen
 import com.example.cineone.ui.movie.MovieDetailScreen
 import com.example.cineone.ui.movie.MovieListScreen
 import com.example.cineone.ui.seat.SeatSelectionScreen
+import com.example.cineone.ui.food.FoodSelectionScreen
 import com.example.cineone.ui.showtime.ShowtimeScreen
 
 @Composable
@@ -140,25 +141,18 @@ fun AppNavGraph(
             route = Screen.SeatSelection.route,
             arguments = listOf(
                 navArgument("showtimeId") { type = NavType.LongType },
-                navArgument("movieTitle") {
-                    type = NavType.StringType
-                    defaultValue = ""
+                navArgument("cinemaId") {
+                    type = NavType.LongType
+                    defaultValue = 1L
                 },
-                navArgument("cinemaName") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                },
-                navArgument("startTime") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                },
-                navArgument("basePrice") {
-                    type = NavType.StringType
-                    defaultValue = "85000"
-                }
+                navArgument("movieTitle") { type = NavType.StringType; defaultValue = "" },
+                navArgument("cinemaName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("startTime") { type = NavType.StringType; defaultValue = "" },
+                navArgument("basePrice") { type = NavType.StringType; defaultValue = "85000" }
             )
         ) { backStackEntry ->
             val showtimeId = backStackEntry.arguments?.getLong("showtimeId") ?: 0L
+            val cinemaId = backStackEntry.arguments?.getLong("cinemaId") ?: 1L
             val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
             val cinemaName = backStackEntry.arguments?.getString("cinemaName") ?: ""
             val startTime = backStackEntry.arguments?.getString("startTime") ?: ""
@@ -166,10 +160,43 @@ fun AppNavGraph(
             SeatSelectionScreen(
                 navController = navController,
                 showtimeId = showtimeId,
+                cinemaId = cinemaId,
                 movieTitle = movieTitle,
                 cinemaName = cinemaName,
                 startTime = startTime,
                 basePriceStr = basePrice
+            )
+        }
+
+        // 9. Màn hình Chọn Combo Bắp Nước & Tạm tính giỏ hàng (SCRUM-28)
+        composable(
+            route = Screen.FoodSelection.route,
+            arguments = listOf(
+                navArgument("cinemaId") { type = NavType.LongType },
+                navArgument("showtimeId") { type = NavType.LongType },
+                navArgument("movieTitle") { type = NavType.StringType; defaultValue = "" },
+                navArgument("cinemaName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("startTime") { type = NavType.StringType; defaultValue = "" },
+                navArgument("seatNames") { type = NavType.StringType; defaultValue = "" },
+                navArgument("seatPrice") { type = NavType.StringType; defaultValue = "0" }
+            )
+        ) { backStackEntry ->
+            val cinemaId = backStackEntry.arguments?.getLong("cinemaId") ?: 0L
+            val showtimeId = backStackEntry.arguments?.getLong("showtimeId") ?: 0L
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            val cinemaName = backStackEntry.arguments?.getString("cinemaName") ?: ""
+            val startTime = backStackEntry.arguments?.getString("startTime") ?: ""
+            val seatNames = backStackEntry.arguments?.getString("seatNames") ?: ""
+            val seatPrice = backStackEntry.arguments?.getString("seatPrice") ?: "0"
+            FoodSelectionScreen(
+                navController = navController,
+                cinemaId = cinemaId,
+                showtimeId = showtimeId,
+                movieTitle = movieTitle,
+                cinemaName = cinemaName,
+                startTime = startTime,
+                seatNames = seatNames,
+                seatPriceStr = seatPrice
             )
         }
     }

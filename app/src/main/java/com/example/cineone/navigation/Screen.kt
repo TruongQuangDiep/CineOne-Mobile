@@ -18,19 +18,30 @@ sealed class Screen(val route: String) {
         fun createRoute(status: String = "NOW_SHOWING") = "movie_list?status=$status"
     }
 
-    // SCRUM-92: Chọn suất chiếu
     object Showtime : Screen("showtime/{movieId}?movieTitle={movieTitle}") {
         fun createRoute(movieId: Long, movieTitle: String = "") = "showtime/$movieId?movieTitle=$movieTitle"
     }
 
-    // SCRUM-93: Sơ đồ chọn ghế Realtime
-    object SeatSelection : Screen("seat_selection/{showtimeId}?movieTitle={movieTitle}&cinemaName={cinemaName}&startTime={startTime}&basePrice={basePrice}") {
+    object SeatSelection : Screen("seat_selection/{showtimeId}?cinemaId={cinemaId}&movieTitle={movieTitle}&cinemaName={cinemaName}&startTime={startTime}&basePrice={basePrice}") {
         fun createRoute(
+            showtimeId: Long,
+            cinemaId: Long = 0L,
+            movieTitle: String = "",
+            cinemaName: String = "",
+            startTime: String = "",
+            basePrice: String = "85000"
+        ) = "seat_selection/$showtimeId?cinemaId=$cinemaId&movieTitle=$movieTitle&cinemaName=$cinemaName&startTime=$startTime&basePrice=$basePrice"
+    }
+
+    object FoodSelection : Screen("food_selection/{cinemaId}?showtimeId={showtimeId}&movieTitle={movieTitle}&cinemaName={cinemaName}&startTime={startTime}&seatNames={seatNames}&seatPrice={seatPrice}") {
+        fun createRoute(
+            cinemaId: Long,
             showtimeId: Long,
             movieTitle: String = "",
             cinemaName: String = "",
             startTime: String = "",
-            basePrice: String = "0"
-        ) = "seat_selection/$showtimeId?movieTitle=$movieTitle&cinemaName=$cinemaName&startTime=$startTime&basePrice=$basePrice"
+            seatNames: String = "",
+            seatPrice: String = "0"
+        ) = "food_selection/$cinemaId?showtimeId=$showtimeId&movieTitle=$movieTitle&cinemaName=$cinemaName&startTime=$startTime&seatNames=$seatNames&seatPrice=$seatPrice"
     }
 }
