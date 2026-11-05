@@ -14,6 +14,9 @@ sealed class Screen(val route: String) {
     object MovieDetail : Screen("movie_detail/{movieId}") {
         fun createRoute(movieId: Long) = "movie_detail/$movieId"
     }
+    object MovieList : Screen("movie_list?status={status}") {
+        fun createRoute(status: String = "NOW_SHOWING") = "movie_list?status=$status"
+    }
 
     object Showtime : Screen("showtime/{movieId}?movieTitle={movieTitle}") {
         fun createRoute(movieId: Long, movieTitle: String = "") = "showtime/$movieId?movieTitle=$movieTitle"
