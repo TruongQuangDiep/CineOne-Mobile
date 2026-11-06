@@ -75,7 +75,6 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedBottomTab by remember { mutableStateOf(HomeBottomTab.HOME) }
     var selectedPromo by remember { mutableStateOf<HomePromotionItem?>(null) }
-    var showAiQuickDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
@@ -105,7 +104,7 @@ fun HomeScreen(
                             Screen.MovieSearch.createRoute(query = uiState.searchQuery)
                         )
                     },
-                    onAiAssistantClick = { showAiQuickDialog = true },
+                    onAiAssistantClick = { navController.navigate(Screen.Assistant.route) },
                     onMovieStatusTabSelected = viewModel::onTabSelected,
                     onMovieClick = { movieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(movieId))
@@ -230,41 +229,6 @@ fun HomeScreen(
         )
     }
 
-    if (showAiQuickDialog) {
-        AlertDialog(
-            onDismissRequest = { showAiQuickDialog = false },
-            containerColor = CineSurfaceCard,
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.SmartToy,
-                        contentDescription = null,
-                        tint = CineRedPrimary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Trợ lý CineOne AI",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CineTextWhite
-                    )
-                }
-            },
-            text = {
-                Text(
-                    text = "Tính năng Trợ lý AI hỗ trợ tìm phim bằng ngôn ngữ tự nhiên, tóm tắt review và giải đáp FAQ.",
-                    fontSize = 14.sp,
-                    color = CineTextGray
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showAiQuickDialog = false }) {
-                    Text("Đã hiểu", color = CineRedPrimary, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
 }
 
 @Composable

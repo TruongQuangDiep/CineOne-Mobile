@@ -4,7 +4,7 @@ import android.os.Build
 
 object ApiConfig {
     const val BASE_URL = "http://10.0.2.2:8080"
-    private const val PHYSICAL_DEVICE_BASE_URL = "http://127.0.0.1:8080"
+    private const val PHYSICAL_DEVICE_BASE_URL = "http://192.168.1.7:8080"
 
     fun activeBaseUrl(): String {
         val isEmulator = Build.FINGERPRINT.startsWith("generic")
@@ -74,5 +74,12 @@ object ApiConfig {
     object Fnb {
         const val BY_CINEMA = "/api/v1/cinemas"
         fun byCinema(cinemaId: Long) = "/api/v1/cinemas/$cinemaId/fnbs"
+    }
+
+    object Ai {
+        const val FAQ = "/api/v1/ai/faq"
+        const val SEARCH_CRITERIA = "/api/v1/ai/search-criteria"
+        fun movieReviewSummary(movieId: Long) = "/api/v1/movies/$movieId/reviews/summary"
+        fun aiMovieReviewSummary(movieId: Long) = "/api/v1/ai/movies/$movieId/review-summary"
     }
 }

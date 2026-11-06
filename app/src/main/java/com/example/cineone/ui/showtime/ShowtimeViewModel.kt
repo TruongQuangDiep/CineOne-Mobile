@@ -123,6 +123,7 @@ class ShowtimeViewModel(
         initialTimeSlot: String = "ALL",
         initialLocationMode: String = "NONE",
         initialCity: String = "",
+        initialBrand: String = "",
         context: Context? = null
     ) {
         val currentDates = _uiState.value.dates
@@ -134,15 +135,23 @@ class ShowtimeViewModel(
         val updatedDates = currentDates.map { it.copy(isSelected = it.dateString == targetDate) }
         val targetSlot = TimeSlotFilter.fromCode(initialTimeSlot)
         val targetLoc = LocationFilterMode.fromCode(initialLocationMode)
+        val cleanBrand = initialBrand.trim()
 
         if (!initializedCriteria) {
             initializedCriteria = true
+            val initialBrandsList = if (cleanBrand.isNotBlank() && !cleanBrand.equals("Đề xuất", ignoreCase = true)) {
+                listOf("Đề xuất", cleanBrand)
+            } else {
+                _uiState.value.availableBrands
+            }
             _uiState.value = _uiState.value.copy(
                 dates = updatedDates,
                 selectedDate = targetDate,
                 selectedTimeSlot = targetSlot,
                 locationMode = targetLoc,
-                selectedCity = initialCity
+                selectedCity = initialCity,
+                availableBrands = initialBrandsList,
+                selectedBrand = cleanBrand.ifBlank { "Đề xuất" }
             )
             if (targetLoc == LocationFilterMode.CURRENT_LOCATION && context != null) {
                 activateCurrentLocation(context)
@@ -288,7 +297,7 @@ class ShowtimeViewModel(
                 launch {
                     val loadedCinemas = mutableListOf<Cinema>()
                     var p = 0
-                    while (p < 10) {
+                    while (p < 15) {
                         var pageItems: List<Cinema> = emptyList()
                         getCinemasUseCase.invoke(q = null, city = null, status = "ACTIVE", page = p).collect { r ->
                             if (r is Resource.Success) {
@@ -337,11 +346,34 @@ class ShowtimeViewModel(
                 }.distinct()
 
                 val cities = allCinemas.map { it.city.trim() }.filter { it.isNotBlank() }.distinct().sorted()
+                val currentCity = _uiState.value.selectedCity
+                val resolvedCity = if (currentCity.isNotBlank()) {
+                    val key = LocationUtils.normalizeCityKey(currentCity)
+                    cities.firstOrNull { LocationUtils.normalizeCityKey(it) == key } ?: currentCity
+                } else {
+                    ""
+                }
+
+                val currentSelectedBrand = _uiState.value.selectedBrand
+                val canonicalBrand = if (currentSelectedBrand != "Đề xuất" && currentSelectedBrand.isNotBlank()) {
+                    brandsFromShowtimes.firstOrNull {
+                        it.equals(currentSelectedBrand, ignoreCase = true) ||
+                            LocationUtils.normalizeSearchText(it).contains(LocationUtils.normalizeSearchText(currentSelectedBrand))
+                    } ?: currentSelectedBrand
+                } else {
+                    "Đề xuất"
+                }
+
+                val mergedBrands = (listOf("Đề xuất") + brandsFromShowtimes + listOfNotNull(
+                    canonicalBrand.takeIf { it != "Đề xuất" }
+                )).distinct()
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    availableBrands = (listOf("Đề xuất") + brandsFromShowtimes).distinct(),
+                    availableBrands = mergedBrands,
+                    selectedBrand = canonicalBrand,
                     availableCities = cities,
+                    selectedCity = resolvedCity,
                     errorMessage = null
                 )
                 recomputeFilteredGroups()

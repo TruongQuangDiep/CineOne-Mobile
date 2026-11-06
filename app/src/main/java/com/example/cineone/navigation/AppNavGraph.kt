@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.cineone.ui.assistant.AssistantScreen
 import com.example.cineone.ui.auth.ForgotPasswordScreen
 import com.example.cineone.ui.auth.LoginScreen
 import com.example.cineone.ui.auth.OtpScreen
@@ -88,6 +89,11 @@ fun AppNavGraph(
             HomeScreen(navController = navController)
         }
 
+        // 6.0. Màn hình Trợ lý CineOne AI Chatbot (SCRUM-26 / CINE-22)
+        composable(Screen.Assistant.route) {
+            AssistantScreen(navController = navController)
+        }
+
         // 6.1. Màn hình Chi tiết phim (SCRUM-87)
         composable(
             route = Screen.MovieDetail.route,
@@ -119,7 +125,7 @@ fun AppNavGraph(
             )
         }
 
-        // 6.3. Màn hình Tìm kiếm đa tiêu chí & Vị trí (SCRUM-25 / CINE-21)
+        // 6.3. Màn hình Tìm kiếm đa tiêu chí & Vị trí (SCRUM-25 / CINE-21 & SCRUM-26)
         composable(
             route = Screen.MovieSearch.route,
             arguments = listOf(
@@ -134,17 +140,41 @@ fun AppNavGraph(
                 navArgument("locationMode") {
                     type = NavType.StringType
                     defaultValue = "NONE"
+                },
+                navArgument("city") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("genre") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("date") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("timeSlot") {
+                    type = NavType.StringType
+                    defaultValue = "ALL"
                 }
             )
         ) { backStackEntry ->
             val query = backStackEntry.arguments?.getString("query") ?: ""
             val tab = backStackEntry.arguments?.getString("tab") ?: "CINEMA"
             val locationMode = backStackEntry.arguments?.getString("locationMode") ?: "NONE"
+            val city = backStackEntry.arguments?.getString("city") ?: ""
+            val genre = backStackEntry.arguments?.getString("genre") ?: ""
+            val date = backStackEntry.arguments?.getString("date") ?: ""
+            val timeSlot = backStackEntry.arguments?.getString("timeSlot") ?: "ALL"
             MovieSearchScreen(
                 navController = navController,
                 initialQuery = query,
                 initialTab = tab,
-                initialLocationMode = locationMode
+                initialLocationMode = locationMode,
+                initialCity = city,
+                initialGenre = genre,
+                initialDate = date,
+                initialTimeSlot = timeSlot
             )
         }
 
@@ -184,7 +214,7 @@ fun AppNavGraph(
             )
         }
 
-        // 7. Màn hình Chọn suất chiếu (Duy trì tiêu chí tìm kiếm từ SCRUM-25)
+        // 7. Màn hình Chọn suất chiếu (Duy trì tiêu chí tìm kiếm từ SCRUM-25 & SCRUM-26)
         composable(
             route = Screen.Showtime.route,
             arguments = listOf(
@@ -208,6 +238,10 @@ fun AppNavGraph(
                 navArgument("city") {
                     type = NavType.StringType
                     defaultValue = ""
+                },
+                navArgument("brand") {
+                    type = NavType.StringType
+                    defaultValue = ""
                 }
             )
         ) { backStackEntry ->
@@ -217,6 +251,7 @@ fun AppNavGraph(
             val timeSlot = backStackEntry.arguments?.getString("timeSlot") ?: "ALL"
             val locationMode = backStackEntry.arguments?.getString("locationMode") ?: "NONE"
             val city = backStackEntry.arguments?.getString("city") ?: ""
+            val brand = backStackEntry.arguments?.getString("brand") ?: ""
             ShowtimeScreen(
                 navController = navController,
                 movieId = movieId,
@@ -224,7 +259,8 @@ fun AppNavGraph(
                 initialDate = date,
                 initialTimeSlot = timeSlot,
                 initialLocationMode = locationMode,
-                initialCity = city
+                initialCity = city,
+                initialBrand = brand
             )
         }
 

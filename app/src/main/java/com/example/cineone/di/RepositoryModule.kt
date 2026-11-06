@@ -36,4 +36,14 @@ class RepositoryModule(private val networkModule: NetworkModule) {
     val showtimeRepository: ShowtimeRepository by lazy {
         ShowtimeRepositoryImpl(networkModule.showtimeApi)
     }
+
+    // AI Assistant Repository (SCRUM-26)
+    val aiRepository: AiRepository by lazy {
+        AiRepositoryImpl(
+            aiApi = networkModule.aiApi,
+            movieRepository = movieRepository,
+            cinemaRepository = cinemaRepository,
+            showtimeRepository = showtimeRepository
+        )
+    }
 }

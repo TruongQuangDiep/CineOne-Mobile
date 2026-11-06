@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.cineone.core.auth.AuthTokenProvider
 import com.example.cineone.core.auth.SessionManager
 import com.example.cineone.core.network.HttpClientFactory
+import com.example.cineone.data.remote.ai.AiApi
 import com.example.cineone.data.remote.auth.AuthApi
 import com.example.cineone.data.remote.booking.BookingApi
 import com.example.cineone.data.remote.cinema.CinemaApi
@@ -29,4 +30,7 @@ class NetworkModule(context: Context) {
     val movieApi by lazy { MovieApi(httpClient) }
     val cinemaApi by lazy { CinemaApi(httpClient) }
     val showtimeApi by lazy { ShowtimeApi(httpClient) }
+
+    // AI Assistant API (SCRUM-26)
+    val aiApi by lazy { AiApi(httpClient) }
 }
