@@ -156,6 +156,24 @@ object LocationUtils {
             .lowercase(Locale.ROOT)
     }
 
+    fun normalizeCityKey(input: String?): String {
+        val base = normalizeSearchText(input)
+            .replace(Regex("[.,\\-_/]+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if (base.isBlank()) return ""
+        val withoutPrefix = base
+            .replace(Regex("^(tp|thanh pho|tinh)\\s+"), "")
+            .trim()
+        return when (withoutPrefix) {
+            "hcm", "tphcm", "tp hcm", "sai gon", "saigon" -> "ho chi minh"
+            "hn", "hanoi" -> "ha noi"
+            "brvt", "vung tau", "ba ria" -> "ba ria vung tau"
+            "hue" -> "thua thien hue"
+            else -> withoutPrefix
+        }
+    }
+
     @SuppressLint("MissingPermission")
     fun fetchDeviceLocation(context: Context): Pair<Double, Double>? {
         return try {

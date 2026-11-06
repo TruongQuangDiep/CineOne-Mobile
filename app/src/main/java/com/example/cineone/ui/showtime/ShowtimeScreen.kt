@@ -54,6 +54,7 @@ fun ShowtimeScreen(
     initialTimeSlot: String = "ALL",
     initialLocationMode: String = "NONE",
     initialCity: String = "",
+    initialBrand: String = "",
     viewModel: ShowtimeViewModel = viewModel(factory = ShowtimeViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -83,13 +84,14 @@ fun ShowtimeScreen(
         }
     }
 
-    LaunchedEffect(movieId, initialDate, initialTimeSlot, initialLocationMode, initialCity) {
+    LaunchedEffect(movieId, initialDate, initialTimeSlot, initialLocationMode, initialCity, initialBrand) {
         viewModel.initWithPreservedCriteria(
             movieId = movieId,
             initialDate = initialDate,
             initialTimeSlot = initialTimeSlot,
             initialLocationMode = initialLocationMode,
             initialCity = initialCity,
+            initialBrand = initialBrand,
             context = context
         )
     }

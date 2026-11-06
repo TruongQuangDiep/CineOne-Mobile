@@ -58,6 +58,10 @@ fun MovieSearchScreen(
     initialQuery: String = "",
     initialTab: String = "CINEMA",
     initialLocationMode: String = "NONE",
+    initialCity: String = "",
+    initialGenre: String = "",
+    initialDate: String = "",
+    initialTimeSlot: String = "ALL",
     viewModel: MovieViewModel = viewModel(factory = MovieViewModel.Factory)
 ) {
     val uiState by viewModel.searchUiState.collectAsState()
@@ -88,11 +92,16 @@ fun MovieSearchScreen(
         }
     }
 
-    LaunchedEffect(initialQuery, initialTab, initialLocationMode) {
+    LaunchedEffect(initialQuery, initialTab, initialLocationMode, initialCity, initialGenre, initialDate, initialTimeSlot) {
         viewModel.initSearchScreen(
             initialQuery = initialQuery,
             initialTabCode = initialTab,
-            initialLocationCode = initialLocationMode
+            initialLocationCode = initialLocationMode,
+            initialCity = initialCity,
+            initialGenre = initialGenre,
+            initialDate = initialDate,
+            initialTimeSlot = initialTimeSlot,
+            context = context
         )
     }
 

@@ -213,30 +213,56 @@ class MovieViewModel(
     fun initSearchScreen(
         initialQuery: String = "",
         initialTabCode: String = "CINEMA",
-        initialLocationCode: String = "NONE"
+        initialLocationCode: String = "NONE",
+        initialCity: String = "",
+        initialGenre: String = "",
+        initialDate: String = "",
+        initialTimeSlot: String = "ALL",
+        context: Context? = null
     ) {
-        val dates = buildUpcomingDates()
-        val defaultDate = dates.firstOrNull()?.dateString.orEmpty()
+        val rawDates = buildUpcomingDates()
+        val defaultDate = if (initialDate.isNotBlank() && rawDates.any { it.dateString == initialDate }) {
+            initialDate
+        } else {
+            rawDates.firstOrNull()?.dateString.orEmpty()
+        }
+        val dates = rawDates.map { it.copy(isSelected = it.dateString == defaultDate) }
         val targetTab = SearchCategoryTab.fromCode(initialTabCode)
         val targetLoc = LocationFilterMode.fromCode(initialLocationCode)
+        val targetSlot = TimeSlotFilter.fromCode(initialTimeSlot)
+        val initialGenreSet = if (initialGenre.isNotBlank()) setOf(initialGenre.trim()) else emptySet()
 
         if (!searchInitialized) {
             searchInitialized = true
             val cachedCinemas = CinemaRepositoryImpl.getCachedCinemasSnapshot()
             val cachedMovies = MovieRepositoryImpl.getCachedMoviesSnapshot()
+            val resolvedLoc = if (targetLoc == LocationFilterMode.PROVINCE && initialCity.isBlank()) {
+                LocationFilterMode.NONE
+            } else {
+                targetLoc
+            }
 
             _searchUiState.value = _searchUiState.value.copy(
                 searchQuery = initialQuery,
                 selectedTab = targetTab,
-                locationMode = if (targetLoc == LocationFilterMode.PROVINCE) LocationFilterMode.NONE else targetLoc,
+                locationMode = resolvedLoc,
+                selectedCity = initialCity.trim(),
+                selectedGenres = initialGenreSet,
                 dates = dates,
                 selectedDate = defaultDate,
+                selectedTimeSlot = targetSlot,
                 allCinemas = cachedCinemas,
                 availableCities = cachedCinemas.map { it.city.trim() }.filter { it.isNotBlank() }.distinct().sorted(),
                 allMovies = cachedMovies,
-                availableGenres = extractGenresFromMovies(cachedMovies)
+                availableGenres = (extractGenresFromMovies(cachedMovies) + initialGenreSet).distinct()
             )
-            if (cachedCinemas.isNotEmpty() || cachedMovies.isNotEmpty()) {
+            if (resolvedLoc == LocationFilterMode.CURRENT_LOCATION && context != null) {
+                _searchUiState.value = _searchUiState.value.copy(locationMode = LocationFilterMode.NONE)
+                activateCurrentLocation(context)
+            } else if (resolvedLoc == LocationFilterMode.HOME_LOCATION && context != null) {
+                _searchUiState.value = _searchUiState.value.copy(locationMode = LocationFilterMode.NONE)
+                activateHomeLocation(context)
+            } else if (cachedCinemas.isNotEmpty() || cachedMovies.isNotEmpty()) {
                 recomputeSearchResults()
             }
 
@@ -246,8 +272,50 @@ class MovieViewModel(
             if (targetTab == SearchCategoryTab.SHOW_DATE && defaultDate.isNotBlank()) {
                 loadShowtimesForSearchDate(defaultDate)
             }
-        } else if (initialQuery.isNotBlank() && initialQuery != _searchUiState.value.searchQuery) {
-            onSearchQueryChange(initialQuery)
+        } else {
+            val hasIncomingFilters = initialQuery.isNotBlank() ||
+                targetLoc != LocationFilterMode.NONE ||
+                initialCity.isNotBlank() ||
+                initialGenreSet.isNotEmpty() ||
+                initialDate.isNotBlank() ||
+                targetSlot != TimeSlotFilter.ALL
+            if (hasIncomingFilters) {
+                val resolvedLoc = if (targetLoc == LocationFilterMode.PROVINCE && initialCity.isBlank()) {
+                    LocationFilterMode.NONE
+                } else {
+                    targetLoc
+                }
+                val matchedCatalogCity = if (initialCity.isNotBlank()) {
+                    val key = LocationUtils.normalizeCityKey(initialCity)
+                    _searchUiState.value.availableCities.firstOrNull {
+                        LocationUtils.normalizeCityKey(it) == key
+                    } ?: initialCity.trim()
+                } else {
+                    ""
+                }
+                _searchUiState.value = _searchUiState.value.copy(
+                    searchQuery = initialQuery,
+                    selectedTab = targetTab,
+                    locationMode = resolvedLoc,
+                    selectedCity = matchedCatalogCity,
+                    selectedGenres = initialGenreSet,
+                    dates = dates,
+                    selectedDate = defaultDate,
+                    selectedTimeSlot = targetSlot
+                )
+                if (resolvedLoc == LocationFilterMode.CURRENT_LOCATION && context != null) {
+                    _searchUiState.value = _searchUiState.value.copy(locationMode = LocationFilterMode.NONE)
+                    activateCurrentLocation(context)
+                } else if (resolvedLoc == LocationFilterMode.HOME_LOCATION && context != null) {
+                    _searchUiState.value = _searchUiState.value.copy(locationMode = LocationFilterMode.NONE)
+                    activateHomeLocation(context)
+                } else {
+                    recomputeSearchResults()
+                }
+                if (targetTab == SearchCategoryTab.SHOW_DATE && defaultDate.isNotBlank()) {
+                    loadShowtimesForSearchDate(defaultDate)
+                }
+            }
         }
     }
 
@@ -272,7 +340,7 @@ class MovieViewModel(
                         _searchUiState.value = _searchUiState.value.copy(
                             isLoading = false,
                             allMovies = movies,
-                            availableGenres = extractGenresFromMovies(movies),
+                            availableGenres = (extractGenresFromMovies(movies) + _searchUiState.value.selectedGenres).distinct(),
                             errorMessage = null
                         )
                         recomputeSearchResults()
@@ -301,7 +369,7 @@ class MovieViewModel(
             val cinemasUseCase = getCinemasUseCase ?: return@launch
             val accumulated = _searchUiState.value.allCinemas.toMutableList()
             var page = 0
-            while (page < 10) {
+            while (page < 15) {
                 var pageItems: List<Cinema> = emptyList()
                 var hadError = false
                 cinemasUseCase(q = null, city = null, status = "ACTIVE", page = page).collect { res ->
@@ -336,10 +404,18 @@ class MovieViewModel(
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
+        val currentCity = _searchUiState.value.selectedCity
+        val resolvedSelectedCity = if (currentCity.isNotBlank()) {
+            val key = LocationUtils.normalizeCityKey(currentCity)
+            cities.firstOrNull { LocationUtils.normalizeCityKey(it) == key } ?: currentCity
+        } else {
+            ""
+        }
         _searchUiState.value = _searchUiState.value.copy(
             isLoading = false,
             allCinemas = cinemas,
             availableCities = cities,
+            selectedCity = resolvedSelectedCity,
             errorMessage = null
         )
         recomputeSearchResults()
@@ -349,9 +425,7 @@ class MovieViewModel(
         val showtimesUseCase = getShowtimesUseCase ?: return
         showtimesLoadJob?.cancel()
         showtimesLoadJob = viewModelScope.launch {
-            _searchUiState.value = _searchUiState.value.copy(
-                isShowtimesLoading = true
-            )
+            _searchUiState.value = _searchUiState.copyWithLoading(true)
             val allShowtimes = mutableListOf<Showtime>()
             var page = 0
             while (page < 8) {
@@ -380,6 +454,10 @@ class MovieViewModel(
                 isShowtimesLoading = false
             )
         }
+    }
+
+    private fun MutableStateFlow<MovieSearchUiState>.copyWithLoading(loading: Boolean): MovieSearchUiState {
+        return this.value.copy(isShowtimesLoading = loading)
     }
 
     fun onSearchQueryChange(newQuery: String) {
@@ -748,6 +826,23 @@ class MovieViewModel(
     }
 
     companion object {
+        val VIETNAM_PROVINCE_NORMS = setOf(
+            "ha noi", "ho chi minh", "da nang", "hai phong", "can tho",
+            "an giang", "ba ria vung tau", "ba ria - vung tau", "vung tau",
+            "bac giang", "bac kan", "bac lieu", "bac ninh", "ben tre",
+            "binh dinh", "binh duong", "binh phuoc", "binh thuan", "ca mau",
+            "cao bang", "dak lak", "dak nong", "dien bien", "dong nai",
+            "dong thap", "gia lai", "ha giang", "ha nam", "ha tinh",
+            "hai duong", "hau giang", "hoa binh", "hung yen", "khanh hoa",
+            "kien giang", "kon tum", "lai chau", "lam dong", "lang son",
+            "lao cai", "long an", "nam dinh", "nghe an", "ninh binh",
+            "ninh thuan", "phu tho", "phu yen", "quang binh", "quang nam",
+            "quang ngai", "quang ninh", "quang tri", "soc trang", "son la",
+            "tay ninh", "thai binh", "thai nguyen", "thanh hoa", "thua thien hue",
+            "hue", "tien giang", "tra vinh", "tuyen quang", "vinh long",
+            "vinh phuc", "yen bai"
+        )
+
         fun splitGenres(rawGenres: String): List<String> {
             if (rawGenres.isBlank()) return emptyList()
             return rawGenres
@@ -798,12 +893,30 @@ class MovieViewModel(
                 }
 
                 LocationFilterMode.PROVINCE -> {
-                    val normCity = LocationUtils.normalizeSearchText(selectedCity)
+                    val normCityKey = LocationUtils.normalizeCityKey(selectedCity)
+                    val normCityRaw = LocationUtils.normalizeSearchText(selectedCity)
+                    val isKnownProvince = VIETNAM_PROVINCE_NORMS.contains(normCityKey) ||
+                        VIETNAM_PROVINCE_NORMS.contains(normCityRaw)
+                    val wholeWordRegex = if (normCityKey.isNotBlank()) {
+                        Regex("""\b${Regex.escape(normCityKey)}\b""")
+                    } else {
+                        null
+                    }
                     queryFiltered
-                        .filter {
-                            normCity.isBlank() ||
-                                LocationUtils.normalizeSearchText(it.city) == normCity ||
-                                LocationUtils.normalizeSearchText(it.address).contains(normCity)
+                        .filter { cinema ->
+                            if (normCityKey.isBlank()) {
+                                true
+                            } else {
+                                val cinemaCityKey = LocationUtils.normalizeCityKey(cinema.city)
+                                if (isKnownProvince && cinemaCityKey.isNotBlank()) {
+                                    cinemaCityKey == normCityKey
+                                } else {
+                                    cinemaCityKey == normCityKey ||
+                                        wholeWordRegex?.containsMatchIn(
+                                            LocationUtils.normalizeSearchText("${cinema.name} ${cinema.address}")
+                                        ) == true
+                                }
+                            }
                         }
                         .map { CinemaWithDistance(cinema = it, distanceKm = null) }
                 }

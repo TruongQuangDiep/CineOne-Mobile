@@ -26,4 +26,7 @@ class UseCaseModule(private val repositoryModule: RepositoryModule) {
     val getCinemasUseCase by lazy { GetCinemasUseCase(repositoryModule.cinemaRepository) }
     val getCinemaFnbsUseCase by lazy { GetCinemaFnbsUseCase(repositoryModule.cinemaRepository) }
     val getShowtimesUseCase by lazy { GetShowtimesUseCase(repositoryModule.showtimeRepository) }
+
+    // AI Assistant UseCase (SCRUM-26)
+    val askAssistantUseCase by lazy { AskAssistantUseCase(repositoryModule.aiRepository) }
 }

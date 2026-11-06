@@ -14,6 +14,7 @@ sealed class Screen(val route: String) {
         fun createRoute(email: String) = "reset_password/$email"
     }
     object Home : Screen("home")
+    object Assistant : Screen("assistant")
     object MovieDetail : Screen("movie_detail/{movieId}") {
         fun createRoute(movieId: Long) = "movie_detail/$movieId"
     }
@@ -21,14 +22,25 @@ sealed class Screen(val route: String) {
         fun createRoute(status: String = "NOW_SHOWING") = "movie_list?status=$status"
     }
 
-    object MovieSearch : Screen("movie_search?query={query}&tab={tab}&locationMode={locationMode}") {
+    object MovieSearch : Screen(
+        "movie_search?query={query}&tab={tab}&locationMode={locationMode}&city={city}&genre={genre}&date={date}&timeSlot={timeSlot}"
+    ) {
         fun createRoute(
             query: String = "",
             tab: String = "CINEMA",
-            locationMode: String = "NONE"
+            locationMode: String = "NONE",
+            city: String = "",
+            genre: String = "",
+            date: String = "",
+            timeSlot: String = "ALL"
         ): String {
             val encodedQuery = encodeParam(query)
-            return "movie_search?query=$encodedQuery&tab=$tab&locationMode=$locationMode"
+            if (city.isEmpty() && genre.isEmpty() && date.isEmpty() && timeSlot == "ALL") {
+                return "movie_search?query=$encodedQuery&tab=$tab&locationMode=$locationMode"
+            }
+            val encodedCity = encodeParam(city)
+            val encodedGenre = encodeParam(genre)
+            return "movie_search?query=$encodedQuery&tab=$tab&locationMode=$locationMode&city=$encodedCity&genre=$encodedGenre&date=$date&timeSlot=$timeSlot"
         }
     }
 
@@ -46,21 +58,25 @@ sealed class Screen(val route: String) {
         }
     }
 
-    object Showtime : Screen("showtime/{movieId}?movieTitle={movieTitle}&date={date}&timeSlot={timeSlot}&locationMode={locationMode}&city={city}") {
+    object Showtime : Screen(
+        "showtime/{movieId}?movieTitle={movieTitle}&date={date}&timeSlot={timeSlot}&locationMode={locationMode}&city={city}&brand={brand}"
+    ) {
         fun createRoute(
             movieId: Long,
             movieTitle: String = "",
             date: String = "",
             timeSlot: String = "ALL",
             locationMode: String = "NONE",
-            city: String = ""
+            city: String = "",
+            brand: String = ""
         ): String {
-            if (date.isEmpty() && timeSlot == "ALL" && locationMode == "NONE" && city.isEmpty()) {
+            if (date.isEmpty() && timeSlot == "ALL" && locationMode == "NONE" && city.isEmpty() && brand.isEmpty()) {
                 return "showtime/$movieId?movieTitle=$movieTitle"
             }
             val encodedTitle = encodeParam(movieTitle)
             val encodedCity = encodeParam(city)
-            return "showtime/$movieId?movieTitle=$encodedTitle&date=$date&timeSlot=$timeSlot&locationMode=$locationMode&city=$encodedCity"
+            val encodedBrand = encodeParam(brand)
+            return "showtime/$movieId?movieTitle=$encodedTitle&date=$date&timeSlot=$timeSlot&locationMode=$locationMode&city=$encodedCity&brand=$encodedBrand"
         }
     }
 
