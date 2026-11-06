@@ -102,6 +102,29 @@ sealed class Screen(val route: String) {
             seatPrice: String = "0"
         ) = "food_selection/$cinemaId?showtimeId=$showtimeId&movieTitle=$movieTitle&cinemaName=$cinemaName&startTime=$startTime&seatNames=$seatNames&seatPrice=$seatPrice"
     }
+
+    object Booking : Screen("booking/{showtimeId}?cinemaId={cinemaId}&movieTitle={movieTitle}&cinemaName={cinemaName}&startTime={startTime}&seatNames={seatNames}&seatPrice={seatPrice}&foodPrice={foodPrice}&foodSummary={foodSummary}") {
+        fun createRoute(
+            showtimeId: Long,
+            cinemaId: Long = 0L,
+            movieTitle: String = "",
+            cinemaName: String = "",
+            startTime: String = "",
+            seatNames: String = "",
+            seatPrice: Long = 0L,
+            foodPrice: Long = 0L,
+            foodSummary: String = ""
+        ) = "booking/$showtimeId?cinemaId=$cinemaId&movieTitle=${encodeParam(movieTitle)}&cinemaName=${encodeParam(cinemaName)}&startTime=${encodeParam(startTime)}&seatNames=${encodeParam(seatNames)}&seatPrice=$seatPrice&foodPrice=$foodPrice&foodSummary=${encodeParam(foodSummary)}"
+    }
+
+    object Payment : Screen("payment/{bookingId}?bookingCode={bookingCode}&amount={amount}&movieTitle={movieTitle}") {
+        fun createRoute(
+            bookingId: Long,
+            bookingCode: String = "",
+            amount: Long = 0L,
+            movieTitle: String = ""
+        ) = "payment/$bookingId?bookingCode=${encodeParam(bookingCode)}&amount=$amount&movieTitle=${encodeParam(movieTitle)}"
+    }
 }
 
 private fun encodeParam(value: String): String {

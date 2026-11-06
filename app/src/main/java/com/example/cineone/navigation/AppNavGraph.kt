@@ -23,6 +23,8 @@ import com.example.cineone.ui.movie.MovieListScreen
 import com.example.cineone.ui.movie.MovieSearchScreen
 import com.example.cineone.ui.seat.SeatSelectionScreen
 import com.example.cineone.ui.showtime.ShowtimeScreen
+import com.example.cineone.ui.booking.BookingScreen
+import com.example.cineone.ui.payment.PaymentScreen
 
 @Composable
 fun AppNavGraph(
@@ -325,6 +327,68 @@ fun AppNavGraph(
                 startTime = startTime,
                 seatNames = seatNames,
                 seatPriceStr = seatPrice
+            )
+        }
+        // 10. Màn hình Checkout chọn Voucher giảm giá (SCRUM-100)
+        composable(
+            route = Screen.Booking.route,
+            arguments = listOf(
+                navArgument("showtimeId") { type = NavType.LongType },
+                navArgument("cinemaId") { type = NavType.LongType; defaultValue = 0L },
+                navArgument("movieTitle") { type = NavType.StringType; defaultValue = "" },
+                navArgument("cinemaName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("startTime") { type = NavType.StringType; defaultValue = "" },
+                navArgument("seatNames") { type = NavType.StringType; defaultValue = "" },
+                navArgument("seatPrice") { type = NavType.LongType; defaultValue = 0L },
+                navArgument("foodPrice") { type = NavType.LongType; defaultValue = 0L },
+                navArgument("foodSummary") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val showtimeId = backStackEntry.arguments?.getLong("showtimeId") ?: 0L
+            val cinemaId = backStackEntry.arguments?.getLong("cinemaId") ?: 0L
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            val cinemaName = backStackEntry.arguments?.getString("cinemaName") ?: ""
+            val startTime = backStackEntry.arguments?.getString("startTime") ?: ""
+            val seatNames = backStackEntry.arguments?.getString("seatNames") ?: ""
+            val seatPrice = backStackEntry.arguments?.getLong("seatPrice") ?: 0L
+            val foodPrice = backStackEntry.arguments?.getLong("foodPrice") ?: 0L
+            val foodSummary = backStackEntry.arguments?.getString("foodSummary") ?: ""
+
+            BookingScreen(
+                navController = navController,
+                showtimeId = showtimeId,
+                cinemaId = cinemaId,
+                movieTitle = movieTitle,
+                cinemaName = cinemaName,
+                startTime = startTime,
+                seatNames = seatNames,
+                seatPrice = seatPrice,
+                foodPrice = foodPrice,
+                foodSummary = foodSummary
+            )
+        }
+
+        // 11. Màn hình Thanh toán VietQR & Đếm ngược 10 phút (SCRUM-101)
+        composable(
+            route = Screen.Payment.route,
+            arguments = listOf(
+                navArgument("bookingId") { type = NavType.LongType },
+                navArgument("bookingCode") { type = NavType.StringType; defaultValue = "" },
+                navArgument("amount") { type = NavType.LongType; defaultValue = 0L },
+                navArgument("movieTitle") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getLong("bookingId") ?: 0L
+            val bookingCode = backStackEntry.arguments?.getString("bookingCode") ?: ""
+            val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+
+            PaymentScreen(
+                navController = navController,
+                bookingId = bookingId,
+                bookingCode = bookingCode,
+                amount = amount,
+                movieTitle = movieTitle
             )
         }
     }
