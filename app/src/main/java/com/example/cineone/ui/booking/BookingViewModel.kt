@@ -1,5 +1,6 @@
 package com.example.cineone.ui.booking
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -125,11 +126,17 @@ class BookingViewModel(
 
     fun confirmBooking(onSuccess: (Booking) -> Unit) {
         val state = _uiState.value
+        val context = CineOneApp.instance
+        val seatIdsString = context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+            .getString("selected_seat_ids", "") ?: ""
+        val realSeatIds = seatIdsString.split(",")
+            .mapNotNull { it.trim().toLongOrNull() }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             bookingRepository.createBooking(
                 showtimeId = state.showtimeId,
-                seatIds = emptyList(),
+                seatIds = realSeatIds, // <-- GỬI SEAT IDS THẬT LÊN SERVER
                 subtotal = state.subtotal,
                 discountAmount = state.discountAmount,
                 totalAmount = state.finalAmount,
