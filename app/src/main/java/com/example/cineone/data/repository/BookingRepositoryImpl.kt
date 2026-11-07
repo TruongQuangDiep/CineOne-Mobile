@@ -11,10 +11,24 @@ import kotlinx.coroutines.flow.flow
 
 class BookingRepositoryImpl(private val bookingApi: BookingApi) : BookingRepository {
 
-    override fun createBooking(showtimeId: Long, seatIds: List<Long>, voucherCode: String?): Flow<Resource<Booking>> = flow {
+    override fun createBooking(
+        showtimeId: Long,
+        seatIds: List<Long>,
+        subtotal: Long,
+        discountAmount: Long,
+        totalAmount: Long,
+        voucherCode: String?
+    ): Flow<Resource<Booking>> = flow {
         emit(Resource.Loading)
         try {
-            val request = CreateBookingRequestDto(showtimeId, seatIds, voucherCode)
+            val request = CreateBookingRequestDto(
+                showtimeId = showtimeId,
+                seatIds = seatIds,
+                subtotal = subtotal,
+                discountAmount = discountAmount,
+                totalAmount = totalAmount,
+                voucherCode = voucherCode
+            )
             val response = bookingApi.createBooking(request)
             if (response.success && response.data != null) {
                 emit(Resource.Success(response.data.toDomain()))

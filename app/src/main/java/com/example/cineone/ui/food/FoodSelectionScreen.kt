@@ -29,6 +29,7 @@ import androidx.navigation.NavController
 import com.example.cineone.domain.model.Fnb
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
+import com.example.cineone.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,7 +128,23 @@ fun FoodSelectionScreen(
 
                     Button(
                         onClick = {
-                            // Chuyển sang màn hình Thanh toán (SCRUM-31)
+                            val fnbSummary = uiState.cartItems.entries.joinToString(", ") { entry ->
+                                val item = uiState.fnbs.find { it.fnbId == entry.key }
+                                "${item?.name ?: "Combo"} x${entry.value}"
+                            }
+                            navController.navigate(
+                                Screen.Booking.createRoute(
+                                    showtimeId = showtimeId,
+                                    cinemaId = cinemaId,
+                                    movieTitle = movieTitle,
+                                    cinemaName = cinemaName,
+                                    startTime = startTime,
+                                    seatNames = seatNames,
+                                    seatPrice = seatPrice.toLong(),
+                                    foodPrice = uiState.foodTotalPrice.toLong(),
+                                    foodSummary = fnbSummary
+                                )
+                            )
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
                         shape = RoundedCornerShape(10.dp),
