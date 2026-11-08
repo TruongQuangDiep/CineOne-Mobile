@@ -9,7 +9,13 @@ interface AuthRepository {
     fun register(email: String, pass: String, name: String, phone: String?): Flow<Resource<User>>
     fun verifyOtp(email: String, otp: String, type: String = "EMAIL_VERIFY"): Flow<Resource<Unit>>
     fun getProfile(): Flow<Resource<User>>
-    fun updateProfile(fullName: String, phone: String?, address: String?): Flow<Resource<User>>
+    fun updateProfile(
+        fullName: String,
+        phone: String?,
+        address: String?,
+        dateOfBirth: String? = null,
+        phoneVerified: Boolean? = null
+    ): Flow<Resource<User>>
     fun forgotPassword(email: String): Flow<Resource<Unit>>
     fun resetPassword(email: String, newPassword: String): Flow<Resource<Unit>>
 }

@@ -17,7 +17,11 @@ import com.example.cineone.ui.auth.ResetPasswordScreen
 import com.example.cineone.ui.cinema.CinemaDetailScreen
 import com.example.cineone.ui.cinema.CinemaListScreen
 import com.example.cineone.ui.food.FoodSelectionScreen
+import com.example.cineone.ui.home.HomeLocationSetupScreen
 import com.example.cineone.ui.home.HomeScreen
+import com.example.cineone.ui.home.ProfileDetailScreen
+import com.example.cineone.ui.home.SettingsScreen
+import com.example.cineone.ui.home.TermsAndPoliciesScreen
 import com.example.cineone.ui.movie.MovieDetailScreen
 import com.example.cineone.ui.movie.MovieListScreen
 import com.example.cineone.ui.movie.MovieSearchScreen
@@ -436,6 +440,26 @@ fun AppNavGraph(
                 navController = navController,
                 ticketId = ticketId
             )
+        }
+
+        // 15. Màn hình Thông tin cá nhân (SCRUM-34 / SCRUM-105)
+        composable(route = Screen.ProfileDetail.route) {
+            ProfileDetailScreen(navController = navController)
+        }
+
+        // 16. Màn hình Địa chỉ / Thiết lập vị trí nhà (SCRUM-34 / SCRUM-105)
+        composable(route = Screen.HomeLocationSetup.route) {
+            HomeLocationSetupScreen(navController = navController)
+        }
+
+        // 17. Màn hình Cài đặt ứng dụng (SCRUM-34 / SCRUM-106)
+        composable(route = Screen.Settings.route) {
+            SettingsScreen(navController = navController)
+        }
+
+        // 18. Màn hình Chính sách & Điều khoản (SCRUM-34 / SCRUM-106)
+        composable(route = Screen.TermsAndPolicies.route) {
+            TermsAndPoliciesScreen(navController = navController)
         }
     }
 }

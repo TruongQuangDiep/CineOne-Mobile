@@ -1,5 +1,7 @@
 package com.example.cineone.ui.theme
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)
@@ -14,20 +16,53 @@ val Pink40 = Color(0xFF7D5260)
 val CineRedPrimary = Color(0xFFE50914)
 val CineRedGradientEnd = Color(0xFFB8050E)
 
-// Background & Surface
-val CineBackgroundDark = Color(0xFF0F1014)
-val CineSurfaceCard = Color(0xFF1A1C23)
-val CineInputBackground = Color(0xFF262933)
+// Dynamic Background & Surface (Tự động đổi theo Sáng / Tối)
+val CineBackgroundDark: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.background
 
-// Borders & Dividers
-val CineBorder = Color(0xFF2E3342)
-val CineBorderMuted = Color(0xFF374151)
-val CineDivider = Color(0xFF262933)
+val CineSurfaceCard: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.surface
 
-// Text Colors
-val CineTextWhite = Color(0xFFFFFFFF)
-val CineTextGray = Color(0xFF9CA3AF)
-val CineTextMuted = Color(0xFF6B7280)
+val CineInputBackground: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.inputBackground
+
+// Dynamic Borders & Dividers
+val CineBorder: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.border
+
+val CineBorderMuted: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.borderMuted
+
+val CineDivider: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.divider
+
+// Dynamic Text Colors
+val CineTextWhite: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.textPrimary
+
+val CineTextGray: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.textSecondary
+
+val CineTextMuted: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = CineTheme.colors.textMuted
 
 // Status / Feedback
 val CineError = Color(0xFFFF5252)

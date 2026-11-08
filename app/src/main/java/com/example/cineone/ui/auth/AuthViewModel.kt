@@ -150,11 +150,21 @@ class AuthViewModel(
         }
     }
 
-    fun updateProfile(fullName: String, phone: String?, address: String?) {
+    fun updateProfile(
+        fullName: String,
+        phone: String?,
+        address: String?,
+        dateOfBirth: String? = null,
+        phoneVerified: Boolean? = null
+    ) {
         viewModelScope.launch {
-            authRepository.updateProfile(fullName, phone, address).collect { resource ->
+            authRepository.updateProfile(fullName, phone, address, dateOfBirth, phoneVerified).collect { resource ->
                 when (resource) {
-                    is Resource.Loading -> _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, isUpdateSuccess = false)
+                    is Resource.Loading -> _uiState.value = _uiState.value.copy(
+                        isLoading = true,
+                        errorMessage = null,
+                        isUpdateSuccess = false
+                    )
                     is Resource.Success -> _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         user = resource.data,
@@ -231,6 +241,53 @@ class AuthViewModel(
                             isResetPasswordSuccess = false,
                             errorMessage = resource.message ?: "Đặt lại mật khẩu thất bại",
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    // Đổi mật khẩu trong Cài đặt (Xác thực mật khẩu cũ -> Đặt mật khẩu mới)
+    fun changePassword(email: String, oldPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                isResetPasswordSuccess = false
+            )
+            authRepository.login(email, oldPassword).collect { loginRes ->
+                when (loginRes) {
+                    is Resource.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Mật khẩu hiện tại không chính xác"
+                        )
+                    }
+                    is Resource.Success -> {
+                        authRepository.resetPassword(email, newPassword).collect { resetRes ->
+                            when (resetRes) {
+                                is Resource.Loading -> {
+                                    _uiState.value = _uiState.value.copy(isLoading = true)
+                                }
+                                is Resource.Success -> {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        isResetPasswordSuccess = true,
+                                        errorMessage = null
+                                    )
+                                }
+                                is Resource.Error -> {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        isResetPasswordSuccess = false,
+                                        errorMessage = resetRes.message ?: "Không thể đổi mật khẩu"
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

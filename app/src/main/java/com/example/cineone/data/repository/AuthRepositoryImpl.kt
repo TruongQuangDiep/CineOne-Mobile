@@ -27,7 +27,14 @@ class AuthRepositoryImpl(
                 authData.token?.let { token ->
                     sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
                 }
-                emit(Resource.Success(authData.user.toDomain()))
+                val domainUser = authData.user.toDomain().let { u ->
+                    u.copy(
+                        dateOfBirth = u.dateOfBirth ?: sessionManager.fetchUserDateOfBirth(),
+                        isVerified = true
+                    )
+                }
+                sessionManager.saveUserProfile(domainUser)
+                emit(Resource.Success(domainUser))
             } else {
                 emit(Resource.Error(response.message ?: "Đăng nhập thất bại"))
             }
@@ -45,7 +52,9 @@ class AuthRepositoryImpl(
                 authData.token?.let { token ->
                     sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
                 }
-                emit(Resource.Success(authData.user.toDomain()))
+                val domainUser = authData.user.toDomain()
+                sessionManager.saveUserProfile(domainUser)
+                emit(Resource.Success(domainUser))
             } else {
                 emit(Resource.Error(response.message ?: "Đăng ký thất bại"))
             }
@@ -73,26 +82,62 @@ class AuthRepositoryImpl(
         try {
             val response = authApi.getProfile()
             if (response.success && response.data != null) {
-                emit(Resource.Success(response.data.toDomain()))
+                val remoteUser = response.data.toDomain()
+                val mergedUser = remoteUser.copy(
+                    dateOfBirth = remoteUser.dateOfBirth?.takeIf { it.isNotBlank() }
+                        ?: sessionManager.fetchUserDateOfBirth(),
+                    isVerified = response.data.isVerified ?: true
+                )
+                sessionManager.saveUserProfile(mergedUser)
+                emit(Resource.Success(mergedUser))
             } else {
-                emit(Resource.Error(response.message ?: "Không thể lấy thông tin cá nhân"))
+                val cached = sessionManager.fetchCachedUser()
+                if (cached != null) {
+                    emit(Resource.Success(cached))
+                } else {
+                    emit(Resource.Error(response.message ?: "Không thể lấy thông tin cá nhân"))
+                }
             }
         } catch (e: Exception) {
-            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
+            val cached = sessionManager.fetchCachedUser()
+            if (cached != null) {
+                emit(Resource.Success(cached))
+            } else {
+                emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
+            }
         }
     }
 
-    override fun updateProfile(fullName: String, phone: String?, address: String?): Flow<Resource<User>> = flow {
+    override fun updateProfile(
+        fullName: String,
+        phone: String?,
+        address: String?,
+        dateOfBirth: String?,
+        phoneVerified: Boolean?
+    ): Flow<Resource<User>> = flow {
         emit(Resource.Loading)
         try {
+            if (dateOfBirth != null) {
+                sessionManager.saveUserDateOfBirth(dateOfBirth)
+            }
             val requestDto = UserDto(
                 fullName = fullName,
                 phone = phone,
-                address = address
+                dateOfBirth = dateOfBirth ?: sessionManager.fetchUserDateOfBirth(),
+                address = address,
+                phoneVerified = phoneVerified
             )
             val response = authApi.updateProfile(requestDto)
             if (response.success && response.data != null) {
-                emit(Resource.Success(response.data.toDomain()))
+                val remoteUser = response.data.toDomain()
+                val updatedUser = remoteUser.copy(
+                    dateOfBirth = remoteUser.dateOfBirth?.takeIf { it.isNotBlank() }
+                        ?: dateOfBirth?.takeIf { it.isNotBlank() }
+                        ?: sessionManager.fetchUserDateOfBirth(),
+                    isVerified = response.data.isVerified ?: true
+                )
+                sessionManager.saveUserProfile(updatedUser)
+                emit(Resource.Success(updatedUser))
             } else {
                 emit(Resource.Error(response.message ?: "Cập nhật thông tin thất bại"))
             }

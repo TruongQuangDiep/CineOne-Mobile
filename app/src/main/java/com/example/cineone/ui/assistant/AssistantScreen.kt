@@ -1471,6 +1471,7 @@ private fun DashedHorizontalDivider(
     }
 }
 
+@Composable
 private fun parseBoldMarkdown(text: String) = buildAnnotatedString {
     val parts = text.split("**")
     parts.forEachIndexed { index, segment ->

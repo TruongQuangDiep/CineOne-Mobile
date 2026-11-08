@@ -5,7 +5,13 @@ import android.content.Context
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
+import com.example.cineone.core.auth.SessionManager
 import com.example.cineone.domain.model.Cinema
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.text.Normalizer
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -94,6 +100,53 @@ object DateTimeUtils {
 
 object LocationUtils {
     private const val EARTH_RADIUS_KM = 6371.0
+
+    // Bảng tọa độ chuẩn cho các quận/huyện/tỉnh thành phổ biến để bản đồ luôn di chuyển chính xác kể cả khi offline
+    private val VIETNAM_AREA_COORDS: List<Pair<String, Pair<Double, Double>>> = listOf(
+        "tan phong, quan 7" to Pair(10.7295, 106.7068),
+        "tan phu, quan 7" to Pair(10.7289, 106.7218),
+        "tan quy, quan 7" to Pair(10.7385, 106.7112),
+        "tan hung, quan 7" to Pair(10.7431, 106.7019),
+        "phu my, quan 7" to Pair(10.7082, 106.7351),
+        "nguyen van linh, quan 7" to Pair(10.7292, 106.7055),
+        "quan 7" to Pair(10.7340, 106.7216),
+        "ben nghe, quan 1" to Pair(10.7797, 106.7019),
+        "ben thanh, quan 1" to Pair(10.7725, 106.6980),
+        "quan 1" to Pair(10.7756, 106.7004),
+        "quan 3" to Pair(10.7844, 106.6844),
+        "quan 10" to Pair(10.7746, 106.6670),
+        "quan binh thanh" to Pair(10.8106, 106.7091),
+        "binh thanh" to Pair(10.8106, 106.7091),
+        "quan go vap" to Pair(10.8387, 106.6653),
+        "go vap" to Pair(10.8387, 106.6653),
+        "quan tan binh" to Pair(10.8015, 106.6526),
+        "tan binh" to Pair(10.8015, 106.6526),
+        "thao dien" to Pair(10.8038, 106.7341),
+        "thu duc" to Pair(10.8494, 106.7537),
+        "quan cau giay" to Pair(21.0362, 105.7906),
+        "cau giay" to Pair(21.0362, 105.7906),
+        "quan dong da" to Pair(21.0181, 105.8292),
+        "dong da" to Pair(21.0181, 105.8292),
+        "quan hoan kiem" to Pair(21.0285, 105.8542),
+        "hoan kiem" to Pair(21.0285, 105.8542),
+        "quan hai ba trung" to Pair(21.0091, 105.8535),
+        "quan thanh xuan" to Pair(20.9938, 105.8114),
+        "quan hai chau" to Pair(16.0544, 108.2022),
+        "quan thanh khe" to Pair(16.0642, 108.1856),
+        "quan son tra" to Pair(16.0860, 108.2398),
+        "quan ninh kieu" to Pair(10.0342, 105.7805),
+        "quan cai rang" to Pair(10.0028, 105.7689),
+        "bien hoa" to Pair(10.9574, 106.8427),
+        "thu dau mot" to Pair(10.9805, 106.6519),
+        "thuan an" to Pair(10.9089, 106.7145),
+        "di an" to Pair(10.8920, 106.7683),
+        "ho chi minh" to Pair(10.7769, 106.7009),
+        "ha noi" to Pair(21.0285, 105.8542),
+        "da nang" to Pair(16.0544, 108.2022),
+        "can tho" to Pair(10.0452, 105.7469),
+        "dong nai" to Pair(10.9574, 106.8427),
+        "binh duong" to Pair(10.9805, 106.6519)
+    )
 
     fun calculateDistanceKm(
         lat1: Double,
@@ -200,6 +253,131 @@ object LocationUtils {
         }
     }
 
+    /**
+     * Tìm tọa độ chính xác cho địa chỉ vừa nhập để di chuyển bản đồ và ghim vị trí:
+     * 1. OpenStreetMap Nominatim Geocoding (hỗ trợ tìm đến tận đường/phường/quận tại Việt Nam)
+     * 2. Android Geocoder trên thiết bị
+     * 3. Bảng tọa độ khu vực Việt Nam & cụm rạp trong DB
+     */
+    @Suppress("DEPRECATION")
+    fun geocodeAddressForMap(
+        context: Context?,
+        streetDetail: String,
+        ward: String,
+        district: String,
+        province: String,
+        cinemas: List<Cinema>
+    ): Pair<Double, Double>? {
+        val fullAddress = listOf(streetDetail.trim(), ward.trim(), district.trim(), province.trim())
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
+        if (fullAddress.isBlank()) return null
+
+        // 1. Thử truy vấn Nominatim OpenStreetMap (từ chi tiết nhất tới cấp phường/quận)
+        val queriesToTry = buildList {
+            add("$fullAddress, Việt Nam")
+            if (streetDetail.isNotBlank() && (district.isNotBlank() || province.isNotBlank())) {
+                val withoutWard = listOf(streetDetail.trim(), district.trim(), province.trim())
+                    .filter { it.isNotBlank() }
+                    .joinToString(", ")
+                add("$withoutWard, Việt Nam")
+            }
+            if (ward.isNotBlank() || district.isNotBlank()) {
+                val areaOnly = listOf(ward.trim(), district.trim(), province.trim())
+                    .filter { it.isNotBlank() }
+                    .joinToString(", ")
+                if (areaOnly.isNotBlank() && areaOnly != fullAddress) {
+                    add("$areaOnly, Việt Nam")
+                }
+            }
+        }.distinct()
+
+        for (query in queriesToTry) {
+            val nominatimResult = queryNominatimCoordinates(query)
+            if (nominatimResult != null) return nominatimResult
+        }
+
+        // 2. Sử dụng Android Geocoder nếu khả dụng
+        if (context != null && Geocoder.isPresent()) {
+            for (query in queriesToTry) {
+                val geocoded = runCatching {
+                    val geocoder = Geocoder(context, Locale.forLanguageTag("vi-VN"))
+                    val results = geocoder.getFromLocationName(query, 1)
+                    val first = results?.firstOrNull()
+                    if (first != null) Pair(first.latitude, first.longitude) else null
+                }.getOrNull()
+                if (geocoded != null) return geocoded
+            }
+        }
+
+        // 3. Tra cứu bảng tọa độ quận/huyện/phường tại Việt Nam
+        val normFull = normalizeSearchText(fullAddress)
+        for ((areaKey, coords) in VIETNAM_AREA_COORDS) {
+            if (normFull.contains(areaKey)) {
+                return coords
+            }
+        }
+
+        // 4. Đối chiếu với các rạp trong cùng khu vực từ DB
+        return matchCinemaAreaCoordinates(normFull, cinemas)
+    }
+
+    private fun queryNominatimCoordinates(query: String): Pair<Double, Double>? {
+        return runCatching {
+            val encoded = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+            val url = URL("https://nominatim.openstreetmap.org/search?format=json&q=$encoded&countrycodes=vn&limit=1")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 3500
+                readTimeout = 3500
+                setRequestProperty("User-Agent", "CineOneMobileApp/1.0 (Android)")
+                setRequestProperty("Accept-Language", "vi-VN,vi;q=0.9")
+            }
+            try {
+                if (conn.responseCode == 200) {
+                    val body = conn.inputStream.bufferedReader().use { it.readText() }
+                    val arr = JSONArray(body)
+                    if (arr.length() > 0) {
+                        val obj = arr.getJSONObject(0)
+                        val lat = obj.optString("lat").toDoubleOrNull()
+                        val lon = obj.optString("lon").toDoubleOrNull()
+                        if (lat != null && lon != null && lat in -90.0..90.0 && lon in -180.0..180.0) {
+                            return Pair(lat, lon)
+                        }
+                    }
+                }
+                null
+            } finally {
+                conn.disconnect()
+            }
+        }.getOrNull()
+    }
+
+    private fun matchCinemaAreaCoordinates(
+        normalizedAddr: String,
+        cinemas: List<Cinema>
+    ): Pair<Double, Double>? {
+        val cinemasWithCoords = cinemas.filter { it.latitude != null && it.longitude != null }
+        if (cinemasWithCoords.isNotEmpty()) {
+            val bestCinema = cinemasWithCoords.maxByOrNull { cinema ->
+                val cinemaAddrTokens = normalizeSearchText("${cinema.address} ${cinema.city}")
+                    .split(Regex("[,\\s]+"))
+                    .filter { it.length >= 3 }
+                cinemaAddrTokens.count { token -> normalizedAddr.contains(token) }
+            }
+            if (bestCinema != null) {
+                val matchCount = normalizeSearchText("${bestCinema.address} ${bestCinema.city}")
+                    .split(Regex("[,\\s]+"))
+                    .filter { it.length >= 3 }
+                    .count { token -> normalizedAddr.contains(token) }
+                if (matchCount > 0) {
+                    return Pair(bestCinema.latitude!!, bestCinema.longitude!!)
+                }
+            }
+        }
+        return null
+    }
+
     @Suppress("DEPRECATION")
     fun resolveAddressCoordinates(
         context: Context?,
@@ -208,6 +386,14 @@ object LocationUtils {
     ): Pair<Double, Double>? {
         val raw = address?.trim().orEmpty()
         if (raw.isBlank()) return null
+
+        // 0. Ưu tiên lấy tọa độ ghim chính xác mà người dùng đã kéo ghim và lưu trên bản đồ
+        if (context != null) {
+            val pinned = runCatching {
+                SessionManager(context).fetchUserHomeCoordinates(forAddress = raw)
+            }.getOrNull()
+            if (pinned != null) return pinned
+        }
 
         // 1. Nếu chuỗi địa chỉ có chứa sẵn tọa độ "lat, lon"
         val coordParts = raw.split(",")
@@ -230,27 +416,18 @@ object LocationUtils {
             if (geocoded != null) return geocoded
         }
 
-        // 3. Đối chiếu với tọa độ thực của các rạp trong cùng khu vực / thành phố từ DB
+        // 3. Thử Nominatim hoặc bảng tọa độ khu vực Việt Nam
+        val nominatim = queryNominatimCoordinates("$raw, Việt Nam")
+        if (nominatim != null) return nominatim
+
         val normalizedAddr = normalizeSearchText(raw)
-        val cinemasWithCoords = cinemas.filter { it.latitude != null && it.longitude != null }
-        if (cinemasWithCoords.isNotEmpty()) {
-            val bestCinema = cinemasWithCoords.maxByOrNull { cinema ->
-                val cinemaAddrTokens = normalizeSearchText("${cinema.address} ${cinema.city}")
-                    .split(Regex("[,\\s]+"))
-                    .filter { it.length >= 3 }
-                cinemaAddrTokens.count { token -> normalizedAddr.contains(token) }
-            }
-            if (bestCinema != null) {
-                val matchCount = normalizeSearchText("${bestCinema.address} ${bestCinema.city}")
-                    .split(Regex("[,\\s]+"))
-                    .filter { it.length >= 3 }
-                    .count { token -> normalizedAddr.contains(token) }
-                if (matchCount > 0) {
-                    return Pair(bestCinema.latitude!!, bestCinema.longitude!!)
-                }
+        for ((areaKey, coords) in VIETNAM_AREA_COORDS) {
+            if (normalizedAddr.contains(areaKey)) {
+                return coords
             }
         }
 
-        return null
+        // 4. Đối chiếu với tọa độ thực của các rạp trong cùng khu vực / thành phố từ DB
+        return matchCinemaAreaCoordinates(normalizedAddr, cinemas)
     }
 }

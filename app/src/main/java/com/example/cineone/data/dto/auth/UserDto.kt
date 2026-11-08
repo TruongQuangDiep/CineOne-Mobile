@@ -29,6 +29,12 @@ data class UserDto(
     @SerialName("isVerified")
     val isVerified: Boolean? = false,
 
+    @SerialName("emailVerified")
+    val emailVerified: Boolean? = null,
+
+    @SerialName("phoneVerified")
+    val phoneVerified: Boolean? = null,
+
     @SerialName("totalSpending")
     val totalSpending: Long? = 0L,
 )
@@ -46,4 +52,7 @@ data class UpdateProfileRequestDto(
 
     @SerialName("homeAddress")
     val homeAddress: String? = null,
+
+    @SerialName("phoneVerified")
+    val phoneVerified: Boolean? = null,
 )
