@@ -3,6 +3,7 @@ package com.example.cineone.ui.home
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,11 +16,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -134,6 +135,9 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
+                    onMyTicketsClick = {
+                        navController.navigate(Screen.TicketList.route)
+                    },
                     onLogout = {
                         runCatching {
                             CineOneApp.instance.networkModule.sessionManager.clearSession()
@@ -228,7 +232,6 @@ fun HomeScreen(
             }
         )
     }
-
 }
 
 @Composable
@@ -908,63 +911,244 @@ private fun CineOneBottomBar(
 @Composable
 private fun QuickProfileTab(
     modifier: Modifier = Modifier,
+    onMyTicketsClick: () -> Unit = {},
     onLogout: () -> Unit
 ) {
-    Box(
+    val context = LocalContext.current
+    val userEmail = remember {
+        context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+            .getString("user_email", "abc@gmail.com") ?: "abc@gmail.com"
+    }
+    val userName = remember(userEmail) {
+        if (userEmail.contains("@")) {
+            userEmail.substringBefore("@")
+                .replace(".", " ")
+                .replace("_", " ")
+                .split(" ")
+                .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+        } else "Nguyễn Văn A"
+    }
+
+    Column(
         modifier = modifier
             .background(CineBackgroundDark)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Tiêu đề trang "Tài khoản" (theo wireframe ảnh 5)
+        Text(
+            text = "Tài khoản",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = CineTextWhite,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 1. Card thông tin người dùng (Avatar + Tên + Email + VIP + Nút Thông tin chi tiết)
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
-            border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(CineBorder)),
+            border = BorderStroke(1.dp, CineBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = null,
                     tint = CineRedPrimary,
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier.size(54.dp)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Tài khoản CineOne",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = CineTextWhite
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Quản lý hồ sơ, hạng thành viên & vé của bạn",
-                    fontSize = 13.sp,
-                    color = CineTextGray,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = onLogout,
-                    colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp)
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = userName,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = CineTextWhite
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = userEmail,
+                        fontSize = 13.sp,
+                        color = CineTextGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "VIP",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFD700)
+                        )
+                    }
+                }
+
+                // Nút "Thông tin chi tiết" (theo wireframe ảnh 5)
+                OutlinedButton(
+                    onClick = {
+                        Toast.makeText(context, "Tính năng xem chi tiết hồ sơ sẽ ra mắt ở Sprint sau", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, CineBorder),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "Đăng xuất",
+                        text = "Thông tin\nchi tiết",
                         color = CineTextWhite,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 14.sp
                     )
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // 2. Card Menu 7 mục (theo đúng thứ tự trong wireframe ảnh 5)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
+            border = BorderStroke(1.dp, CineBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // 1. Hạng thành viên
+                ProfileMenuItem(
+                    icon = Icons.Default.Star,
+                    title = "Hạng thành viên",
+                    onClick = { Toast.makeText(context, "Mục Hạng thành viên (SCRUM-33)", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = CineDivider)
+
+                // 2. Vé của tôi (HOẠT ĐỘNG - Mở TicketListScreen)
+                ProfileMenuItem(
+                    icon = Icons.Default.ConfirmationNumber,
+                    title = "Vé của tôi",
+                    onClick = onMyTicketsClick
+                )
+                HorizontalDivider(color = CineDivider)
+
+                // 3. Voucher của tôi
+                ProfileMenuItem(
+                    icon = Icons.Default.LocalActivity,
+                    title = "Voucher của tôi",
+                    onClick = { Toast.makeText(context, "Mục Ví Voucher (SCRUM-33)", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = CineDivider)
+
+                // 4. Đánh giá của tôi
+                ProfileMenuItem(
+                    icon = Icons.Default.RateReview,
+                    title = "Đánh giá của tôi",
+                    onClick = { Toast.makeText(context, "Mục Đánh giá (SCRUM-35)", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = CineDivider)
+
+                // 5. Cài đặt
+                ProfileMenuItem(
+                    icon = Icons.Default.Settings,
+                    title = "Cài đặt",
+                    onClick = { Toast.makeText(context, "Mục Cài đặt (SCRUM-34)", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = CineDivider)
+
+                // 6. Hỗ trợ & khiếu nại
+                ProfileMenuItem(
+                    icon = Icons.Default.ChatBubbleOutline,
+                    title = "Hỗ trợ & khiếu nại",
+                    onClick = { Toast.makeText(context, "Mục Hỗ trợ & khiếu nại (SCRUM-36)", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = CineDivider)
+
+                // 7. Chính sách & điều khoản
+                ProfileMenuItem(
+                    icon = Icons.Default.Policy,
+                    title = "Chính sách & điều khoản",
+                    onClick = { Toast.makeText(context, "Chính sách bảo mật & Điều khoản sử dụng CineOne", Toast.LENGTH_SHORT).show() }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 3. Nút [ ĐĂNG XUẤT ] (HOẠT ĐỘNG - theo đúng wireframe ảnh 5)
+        OutlinedButton(
+            onClick = onLogout,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = CineTextWhite),
+            border = BorderStroke(1.dp, CineBorder),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            Text(
+                text = "ĐĂNG XUẤT",
+                color = CineTextWhite,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
+private fun ProfileMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = CineTextWhite,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = title,
+                color = CineTextWhite,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = CineTextGray,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 

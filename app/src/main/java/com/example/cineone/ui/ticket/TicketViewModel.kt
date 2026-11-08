@@ -1,7 +1,11 @@
 package com.example.cineone.ui.ticket
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.cineone.CineOneApp
 import com.example.cineone.core.common.Resource
 import com.example.cineone.domain.model.Ticket
 import com.example.cineone.domain.model.TicketDetail
@@ -47,7 +51,7 @@ class TicketViewModel(
                     is Resource.Success -> {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            tickets = resource.data,
+                            tickets = resource.data ?: emptyList(),
                             errorMessage = null
                         )
                     }
@@ -76,6 +80,18 @@ class TicketViewModel(
                         errorMessage = resource.message
                     )
                 }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = CineOneApp.instance
+                TicketViewModel(
+                    getTicketsUseCase = app.useCaseModule.getTicketsUseCase,
+                    ticketRepository = app.repositoryModule.ticketRepository
+                )
             }
         }
     }

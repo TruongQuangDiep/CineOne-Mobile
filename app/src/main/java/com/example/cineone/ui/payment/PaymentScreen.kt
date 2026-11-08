@@ -63,11 +63,18 @@ fun PaymentScreen(
         )
     }
 
-    // Tự động thông báo / chuyển trang khi webhook báo thành công
-    var showSuccessDialog by remember { mutableStateOf(false) }
-    LaunchedEffect(uiState.isPaid) {
+    LaunchedEffect(uiState.isPaid)   {
         if (uiState.isPaid) {
-            showSuccessDialog = true
+            navController.navigate(
+                Screen.PaymentResult.createRoute(
+                    bookingId = bookingId,
+                    bookingCode = bookingCode,
+                    movieTitle = movieTitle,
+                    amount = amount
+                )
+            ) {
+                popUpTo(Screen.Home.route) { inclusive = false }
+            }
         }
     }
 
@@ -194,60 +201,27 @@ fun PaymentScreen(
                 }
             }
 
-            // Nút kiểm tra trạng thái thanh toán thủ công
-            OutlinedButton(
-                onClick = {
-                    viewModel.checkStatusManually { isSuccess, msg ->
-                        if (!isSuccess) {
-                            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                enabled = !uiState.isLoading,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = CineTextWhite),
-                border = BorderStroke(1.dp, CineBorder),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Trạng thái tự động lắng nghe thanh toán Realtime
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(color = CineRedPrimary, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Đang kiểm tra...", fontSize = 14.sp)
-                } else {
-                    Text("Tôi đã chuyển khoản - Kiểm tra ngay", fontSize = 14.sp)
-                }
+                CircularProgressIndicator(
+                    color = CineRedPrimary,
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "Đang chờ thanh toán... Hệ thống sẽ tự động chuyển trang",
+                    color = CineTextGray,
+                    fontSize = 13.sp
+                )
             }
         }
-    }
-
-    // Dialog thông báo thanh toán thành công (Webhook báo về)
-    if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = {},
-            containerColor = CineSurfaceCard,
-            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = CineSuccess, modifier = Modifier.size(48.dp)) },
-            title = { Text("Thanh toán thành công!", color = CineTextWhite, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center) },
-            text = {
-                Text(
-                    "Đơn đặt vé của bạn đã được xác nhận. Vé xem phim đã được lưu vào mục 'Vé của tôi'.",
-                    color = CineTextGray,
-                    textAlign = TextAlign.Center
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showSuccessDialog = false
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Home.route) { inclusive = false }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary)
-                ) {
-                    Text("Về Trang chủ")
-                }
-            }
-        )
     }
 
     // Dialog khi hết hạn 10 phút giữ ghế

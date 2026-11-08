@@ -125,6 +125,21 @@ sealed class Screen(val route: String) {
             movieTitle: String = ""
         ) = "payment/$bookingId?bookingCode=${encodeParam(bookingCode)}&amount=$amount&movieTitle=${encodeParam(movieTitle)}"
     }
+
+    object PaymentResult : Screen("payment_result/{bookingId}?bookingCode={bookingCode}&movieTitle={movieTitle}&amount={amount}") {
+        fun createRoute(
+            bookingId: Long,
+            bookingCode: String = "",
+            movieTitle: String = "",
+            amount: Long = 0L
+        ) = "payment_result/$bookingId?bookingCode=${encodeParam(bookingCode)}&movieTitle=${encodeParam(movieTitle)}&amount=$amount"
+    }
+
+    object TicketList : Screen("ticket_list")
+
+    object TicketDetail : Screen("ticket_detail/{ticketId}") {
+        fun createRoute(ticketId: Long) = "ticket_detail/$ticketId"
+    }
 }
 
 private fun encodeParam(value: String): String {

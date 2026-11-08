@@ -25,6 +25,9 @@ import com.example.cineone.ui.seat.SeatSelectionScreen
 import com.example.cineone.ui.showtime.ShowtimeScreen
 import com.example.cineone.ui.booking.BookingScreen
 import com.example.cineone.ui.payment.PaymentScreen
+import com.example.cineone.ui.payment.PaymentResultScreen
+import com.example.cineone.ui.ticket.TicketListScreen
+import com.example.cineone.ui.ticket.TicketDetailScreen
 
 @Composable
 fun AppNavGraph(
@@ -389,6 +392,49 @@ fun AppNavGraph(
                 bookingCode = bookingCode,
                 amount = amount,
                 movieTitle = movieTitle
+            )
+        }
+
+        // 12. Màn hình Thông báo Đặt vé thành công (SCRUM-102)
+        composable(
+            route = Screen.PaymentResult.route,
+            arguments = listOf(
+                navArgument("bookingId") { type = NavType.LongType },
+                navArgument("bookingCode") { type = NavType.StringType; defaultValue = "" },
+                navArgument("movieTitle") { type = NavType.StringType; defaultValue = "" },
+                navArgument("amount") { type = NavType.LongType; defaultValue = 0L }
+            )
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getLong("bookingId") ?: 0L
+            val bookingCode = backStackEntry.arguments?.getString("bookingCode") ?: ""
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+
+            PaymentResultScreen(
+                navController = navController,
+                bookingId = bookingId,
+                bookingCode = bookingCode,
+                movieTitle = movieTitle,
+                amount = amount
+            )
+        }
+
+        // 13. Màn hình Vé của tôi (SCRUM-103)
+        composable(route = Screen.TicketList.route) {
+            TicketListScreen(navController = navController)
+        }
+
+        // 14. Màn hình Chi tiết vé & Mã QR Check-in (SCRUM-103)
+        composable(
+            route = Screen.TicketDetail.route,
+            arguments = listOf(
+                navArgument("ticketId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val ticketId = backStackEntry.arguments?.getLong("ticketId") ?: 0L
+            TicketDetailScreen(
+                navController = navController,
+                ticketId = ticketId
             )
         }
     }

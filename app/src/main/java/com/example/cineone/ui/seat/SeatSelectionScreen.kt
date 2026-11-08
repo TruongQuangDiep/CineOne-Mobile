@@ -1,5 +1,6 @@
 package com.example.cineone.ui.seat
 
+import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +48,7 @@ fun SeatSelectionScreen(
     viewModel: SeatViewModel = viewModel(factory = SeatViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val basePrice = basePriceStr.toDoubleOrNull() ?: 85000.0
 
     LaunchedEffect(showtimeId) {
@@ -122,10 +125,17 @@ fun SeatSelectionScreen(
 
                     Button(
                         onClick = {
-                            // SCRUM-28: CHUYỂN TIẾP SANG CHỌN BẮP NƯỚC & TẠM TÍNH
                             val selectedSeatNames = uiState.selectedSeatIds.mapNotNull { id ->
                                 uiState.seatsByRow.values.flatten().find { it.seatId == id }?.let { "${it.seatRow}${it.seatNumber}" }
                             }.sorted().joinToString(", ")
+
+                            // Lưu seatIds vào session tạm để BookingViewModel đọc được
+                            val idsString = uiState.selectedSeatIds.joinToString(",")
+                            context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("selected_seat_ids", idsString)
+                                .putString("selected_seat_names", selectedSeatNames)
+                                .apply()
 
                             navController.navigate(
                                 Screen.FoodSelection.createRoute(
@@ -135,7 +145,7 @@ fun SeatSelectionScreen(
                                     cinemaName = cinemaName,
                                     startTime = startTime,
                                     seatNames = selectedSeatNames,
-                                    seatPrice = uiState.totalPrice.toString()
+                                    seatPrice = uiState.totalPrice.toLong().toString()
                                 )
                             )
                         },
