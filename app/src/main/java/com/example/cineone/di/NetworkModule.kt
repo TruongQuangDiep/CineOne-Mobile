@@ -14,6 +14,7 @@ import com.example.cineone.data.remote.showtime.ShowtimeApi
 import com.example.cineone.data.remote.ticket.TicketApi
 import com.example.cineone.data.remote.voucher.VoucherApi
 import com.example.cineone.data.remote.payment.PaymentApi
+import com.example.cineone.data.remote.membership.MembershipApi
 import io.ktor.client.*
 
 class NetworkModule(context: Context) {
@@ -27,6 +28,8 @@ class NetworkModule(context: Context) {
     val voucherApi by lazy { VoucherApi(httpClient) }
     val ticketApi by lazy { TicketApi(httpClient) }
     val paymentApi by lazy { PaymentApi(httpClient) }
+
+    val membershipApi by lazy { MembershipApi(httpClient) }
 
     // Catalog APIs (SCRUM-23)
     val movieApi by lazy { MovieApi(httpClient) }

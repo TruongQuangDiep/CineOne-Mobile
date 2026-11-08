@@ -6,13 +6,21 @@ import com.example.cineone.domain.model.Voucher
 fun VoucherDto.toDomain(): Voucher = Voucher(
     voucherId = voucherId,
     code = code,
-    title = title.orEmpty(),
+    title = title ?: description ?: ("Ưu đãi " + code),
+    description = description,
     imageUrl = imageUrl,
-    discountType = discountType?.ifBlank { "FIXED" } ?: "FIXED",
-    discountAmount = discountAmount.toLong(),
-    minOrderAmount = minOrderAmount,
+    discountType = discountType ?: "FIXED",
+    discountAmount = discountValue.toLong(),
+    minOrderAmount = minOrder,
     maxDiscount = maxDiscount,
     startAt = startAt,
-    expiresAt = expiresAt,
-    status = status
+    expiresAt = endAt,
+    status = status,
+    discountDisplay = discountDisplay ?: ("Giảm " + discountValue.toLong() + "đ"),
+    minOrderDisplay = minOrderDisplay ?: ("Đơn tối thiểu: " + minOrder.toLong() + "đ"),
+    maxDiscountDisplay = maxDiscountDisplay,
+    expiryDisplay = expiryDisplay ?: ("HSD: " + (endAt ?: "")),
+    periodDisplay = periodDisplay ?: "",
+    remainingUsage = remainingUsage ?: 999,
+    tab = tab ?: "AVAILABLE"
 )

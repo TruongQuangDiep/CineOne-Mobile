@@ -7,20 +7,24 @@ import kotlinx.serialization.Serializable
 data class VoucherDto(
     val voucherId: Long = 0L,
     val code: String = "",
-    @SerialName("description")
     val title: String? = null,
+    val description: String? = null,
     val imageUrl: String? = null,
     val discountType: String? = null,
-    @SerialName("discountValue")
-    val discountAmount: Double = 0.0,
-    @SerialName("minOrder")
-    val minOrderAmount: Double = 0.0,
+    val discountValue: Double = 0.0,
+    val minOrder: Double = 0.0,
     val maxDiscount: Double? = null,
     val startAt: String? = null,
-    @SerialName("endAt")
-    val expiresAt: String? = null,
+    val endAt: String? = null,
     val usageLimit: Int? = null,
     val status: String = "ACTIVE",
+    val discountDisplay: String? = null,
+    val minOrderDisplay: String? = null,
+    val maxDiscountDisplay: String? = null,
+    val expiryDisplay: String? = null,
+    val periodDisplay: String? = null,
+    val remainingUsage: Int? = null,
+    val tab: String? = null
 )
 
 @Serializable

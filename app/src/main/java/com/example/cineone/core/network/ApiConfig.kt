@@ -43,9 +43,14 @@ object ApiConfig {
         const val CREATE = "/api/v1/bookings"
     }
 
+    object Membership {
+        const val MY_TIER = "/api/v1/memberships/my-tier"
+    }
+
     object Voucher {
         const val MY_VOUCHERS = "/api/v1/vouchers/my-vouchers"
         const val APPLY = "/api/v1/vouchers/apply"
+        fun detail(code: String) = "/api/v1/vouchers/detail/$code"
     }
 
     object Ticket {
