@@ -1,4 +1,4 @@
-package com.example.cineone.ui.home
+﻿package com.example.cineone.ui.home
 
 import android.Manifest
 import android.app.DatePickerDialog
@@ -89,6 +89,7 @@ import com.example.cineone.ui.common.LoadingView
 import com.example.cineone.ui.movie.MoviePosterBox
 import com.example.cineone.ui.movie.formatMovieRatingBadge
 import com.example.cineone.ui.movie.normalizeAgeBadge
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.cineone.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -114,16 +115,34 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedBottomTab by remember { mutableStateOf(HomeBottomTab.HOME) }
-    var selectedPromo by remember { mutableStateOf<HomePromotionItem?>(null) }
     val context = LocalContext.current
+
+    var selectedBottomTabName by rememberSaveable {
+        val initial = context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+            .getString("active_home_tab", HomeBottomTab.HOME.name) ?: HomeBottomTab.HOME.name
+        mutableStateOf(initial)
+    }
+    val selectedBottomTab = remember(selectedBottomTabName) {
+        try {
+            HomeBottomTab.valueOf(selectedBottomTabName)
+        } catch (_: Exception) {
+            HomeBottomTab.HOME
+        }
+    }
+    var selectedPromo by remember { mutableStateOf<HomePromotionItem?>(null) }
 
     Scaffold(
         containerColor = CineBackgroundDark,
         bottomBar = {
             CineOneBottomBar(
                 selectedTab = selectedBottomTab,
-                onTabSelected = { selectedBottomTab = it }
+                onTabSelected = { tab ->
+                    selectedBottomTabName = tab.name
+                    context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+                        .edit()
+                        .putString("active_home_tab", tab.name)
+                        .apply()
+                }
             )
         }
     ) { innerPadding ->
@@ -178,8 +197,14 @@ fun HomeScreen(
                     onProfileDetailClick = {
                         navController.navigate(Screen.ProfileDetail.route)
                     },
+                    onMembershipClick = {
+                        navController.navigate(Screen.Membership.route)
+                    },
                     onMyTicketsClick = {
                         navController.navigate(Screen.TicketList.route)
+                    },
+                    onVouchersClick = {
+                        navController.navigate(Screen.VoucherList.route)
                     },
                     onSettingsClick = {
                         navController.navigate(Screen.Settings.route)
@@ -204,7 +229,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    onBackToHome = { selectedBottomTab = HomeBottomTab.HOME }
+                    onBackToHome = { selectedBottomTabName = HomeBottomTab.HOME.name }
                 )
             }
         }
@@ -960,7 +985,9 @@ private fun CineOneBottomBar(
 private fun QuickProfileTab(
     modifier: Modifier = Modifier,
     onProfileDetailClick: () -> Unit = {},
+    onMembershipClick: () -> Unit = {},
     onMyTicketsClick: () -> Unit = {},
+    onVouchersClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onTermsAndPoliciesClick: () -> Unit = {},
     onLogout: () -> Unit
@@ -1076,7 +1103,7 @@ private fun QuickProfileTab(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = userTier,
+text = userTier,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD700)
@@ -1084,9 +1111,9 @@ private fun QuickProfileTab(
                     }
                 }
 
-                // Nút "Thông tin chi tiết" (SCRUM-105)
-                OutlinedButton(
-                    onClick = onProfileDetailClick,
+                // Nút " Thông tin chi tiết\ (SCRUM-105)
+ OutlinedButton(
+ onClick = onProfileDetailClick,
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, CineBorder),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
@@ -1104,7 +1131,7 @@ private fun QuickProfileTab(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 2. Card Menu 7 mục (theo đúng thứ tự trong wireframe CineOne_giaodien.pdf)
+ // 2. Card Menu 7 mục (theo đúng thứ tự trong wireframe CineOne_giaodien.pdf)
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
@@ -1112,11 +1139,11 @@ private fun QuickProfileTab(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // 1. Hạng thành viên
+                // 1. Hạng thành viên -> Mở MembershipScreen
                 ProfileMenuItem(
                     icon = Icons.Default.Star,
                     title = "Hạng thành viên",
-                    onClick = { Toast.makeText(context, "Mục Hạng thành viên (SCRUM-33)", Toast.LENGTH_SHORT).show() }
+                    onClick = onMembershipClick
                 )
                 HorizontalDivider(color = CineDivider)
 
@@ -1128,11 +1155,11 @@ private fun QuickProfileTab(
                 )
                 HorizontalDivider(color = CineDivider)
 
-                // 3. Voucher của tôi
+                // 3. Voucher của tôi -> Mở VoucherScreen
                 ProfileMenuItem(
                     icon = Icons.Default.LocalActivity,
                     title = "Voucher của tôi",
-                    onClick = { Toast.makeText(context, "Mục Ví Voucher (SCRUM-33)", Toast.LENGTH_SHORT).show() }
+                    onClick = onVouchersClick
                 )
                 HorizontalDivider(color = CineDivider)
 
@@ -2513,7 +2540,8 @@ fun HomeLocationSetupScreen(
     }
 }
 
-private class MapPinJsBridge(
+@androidx.annotation.Keep
+class MapPinJsBridge(
     private val mainHandler: Handler,
     var onPinChanged: (Double, Double) -> Unit
 ) {
@@ -2531,7 +2559,7 @@ private class MapPinJsBridge(
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
+@SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility", "JavascriptInterface")
 @Composable
 private fun InteractivePinMapView(
     latitude: Double,

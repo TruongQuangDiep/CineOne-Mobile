@@ -141,7 +141,8 @@ sealed class Screen(val route: String) {
         fun createRoute(ticketId: Long) = "ticket_detail/$ticketId"
     }
 
-    // SCRUM-34 (SCRUM-105 & SCRUM-106): Hồ sơ cá nhân, Vị trí nhà, Cài đặt & Điều khoản
+    object Membership : Screen("membership")
+    object VoucherList : Screen("voucher_list")
     object ProfileDetail : Screen("profile_detail")
     object HomeLocationSetup : Screen("home_location_setup")
     object Settings : Screen("settings")

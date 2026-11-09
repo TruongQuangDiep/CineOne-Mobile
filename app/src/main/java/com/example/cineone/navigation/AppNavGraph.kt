@@ -32,6 +32,8 @@ import com.example.cineone.ui.payment.PaymentScreen
 import com.example.cineone.ui.payment.PaymentResultScreen
 import com.example.cineone.ui.ticket.TicketListScreen
 import com.example.cineone.ui.ticket.TicketDetailScreen
+import com.example.cineone.ui.membership.MembershipScreen
+import com.example.cineone.ui.voucher.VoucherScreen
 
 @Composable
 fun AppNavGraph(
@@ -442,22 +444,32 @@ fun AppNavGraph(
             )
         }
 
-        // 15. Màn hình Thông tin cá nhân (SCRUM-34 / SCRUM-105)
+        // 15. Màn hình Hạng thành viên (SCRUM-33 / SCRUM-113)
+        composable(Screen.Membership.route) {
+            MembershipScreen(navController = navController)
+        }
+
+        // 16. Màn hình Ví Voucher cá nhân (SCRUM-33 / SCRUM-114)
+        composable(Screen.VoucherList.route) {
+            VoucherScreen(navController = navController)
+        }
+
+        // 17. Màn hình Thông tin cá nhân (SCRUM-34 / SCRUM-105)
         composable(route = Screen.ProfileDetail.route) {
             ProfileDetailScreen(navController = navController)
         }
 
-        // 16. Màn hình Địa chỉ / Thiết lập vị trí nhà (SCRUM-34 / SCRUM-105)
+        // 18. Màn hình Địa chỉ / Thiết lập vị trí nhà (SCRUM-34 / SCRUM-105)
         composable(route = Screen.HomeLocationSetup.route) {
             HomeLocationSetupScreen(navController = navController)
         }
 
-        // 17. Màn hình Cài đặt ứng dụng (SCRUM-34 / SCRUM-106)
+        // 19. Màn hình Cài đặt ứng dụng (SCRUM-34 / SCRUM-106)
         composable(route = Screen.Settings.route) {
             SettingsScreen(navController = navController)
         }
 
-        // 18. Màn hình Chính sách & Điều khoản (SCRUM-34 / SCRUM-106)
+        // 20. Màn hình Chính sách & Điều khoản (SCRUM-34 / SCRUM-106)
         composable(route = Screen.TermsAndPolicies.route) {
             TermsAndPoliciesScreen(navController = navController)
         }

@@ -41,6 +41,10 @@ class RepositoryModule(private val networkModule: NetworkModule) {
         PaymentRepositoryImpl(networkModule.paymentApi)
     }
 
+    val membershipRepository: MembershipRepository by lazy {
+        MembershipRepositoryImpl(networkModule.membershipApi)
+    }
+
     // AI Assistant Repository (SCRUM-26)
     val aiRepository: AiRepository by lazy {
         AiRepositoryImpl(

@@ -68,6 +68,22 @@ class BookingViewModel(
             foodSummary = foodSummary
         )
         loadVouchers()
+
+        // Tự động nạp mã voucher nếu trước đó người dùng đã bấm "Sử dụng" từ Ví Voucher
+        val savedVoucher = CineOneApp.instance
+            .getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+            .getString("selected_voucher_code", null)
+
+        if (!savedVoucher.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(voucherCodeInput = savedVoucher)
+            applyVoucher(savedVoucher)
+            // Xóa mã tạm sau khi đã tự động điền để không áp dụng cho các lần sau
+            CineOneApp.instance
+                .getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+                .edit()
+                .remove("selected_voucher_code")
+                .apply()
+        }
     }
 
     fun onVoucherCodeChanged(code: String) {
