@@ -140,6 +140,9 @@ sealed class Screen(val route: String) {
     object TicketDetail : Screen("ticket_detail/{ticketId}") {
         fun createRoute(ticketId: Long) = "ticket_detail/$ticketId"
     }
+
+    object Membership : Screen("membership")
+    object VoucherList : Screen("voucher_list")
 }
 
 private fun encodeParam(value: String): String {

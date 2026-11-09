@@ -54,6 +54,7 @@ import com.example.cineone.ui.common.LoadingView
 import com.example.cineone.ui.movie.MoviePosterBox
 import com.example.cineone.ui.movie.formatMovieRatingBadge
 import com.example.cineone.ui.movie.normalizeAgeBadge
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.cineone.ui.theme.*
 
 private enum class HomeBottomTab(
@@ -74,16 +75,34 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedBottomTab by remember { mutableStateOf(HomeBottomTab.HOME) }
-    var selectedPromo by remember { mutableStateOf<HomePromotionItem?>(null) }
     val context = LocalContext.current
+
+    var selectedBottomTabName by rememberSaveable {
+        val initial = context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+            .getString("active_home_tab", HomeBottomTab.HOME.name) ?: HomeBottomTab.HOME.name
+        mutableStateOf(initial)
+    }
+    val selectedBottomTab = remember(selectedBottomTabName) {
+        try {
+            HomeBottomTab.valueOf(selectedBottomTabName)
+        } catch (_: Exception) {
+            HomeBottomTab.HOME
+        }
+    }
+    var selectedPromo by remember { mutableStateOf<HomePromotionItem?>(null) }
 
     Scaffold(
         containerColor = CineBackgroundDark,
         bottomBar = {
             CineOneBottomBar(
                 selectedTab = selectedBottomTab,
-                onTabSelected = { selectedBottomTab = it }
+                onTabSelected = { tab ->
+                    selectedBottomTabName = tab.name
+                    context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+                        .edit()
+                        .putString("active_home_tab", tab.name)
+                        .apply()
+                }
             )
         }
     ) { innerPadding ->
@@ -135,8 +154,14 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
+                    onMembershipClick = {
+                        navController.navigate(Screen.Membership.route)
+                    },
                     onMyTicketsClick = {
                         navController.navigate(Screen.TicketList.route)
+                    },
+                    onVouchersClick = {
+                        navController.navigate(Screen.VoucherList.route)
                     },
                     onLogout = {
                         runCatching {
@@ -155,7 +180,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    onBackToHome = { selectedBottomTab = HomeBottomTab.HOME }
+                    onBackToHome = { selectedBottomTabName = HomeBottomTab.HOME.name }
                 )
             }
         }
@@ -911,7 +936,9 @@ private fun CineOneBottomBar(
 @Composable
 private fun QuickProfileTab(
     modifier: Modifier = Modifier,
+    onMembershipClick: () -> Unit = {},
     onMyTicketsClick: () -> Unit = {},
+    onVouchersClick: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -995,7 +1022,7 @@ private fun QuickProfileTab(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "VIP",
+                            text = "NORMAL",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD700)
@@ -1003,11 +1030,9 @@ private fun QuickProfileTab(
                     }
                 }
 
-                // Nút "Thông tin chi tiết" (theo wireframe ảnh 5)
+                // Nút "Thông tin chi tiết"
                 OutlinedButton(
-                    onClick = {
-                        Toast.makeText(context, "Tính năng xem chi tiết hồ sơ sẽ ra mắt ở Sprint sau", Toast.LENGTH_SHORT).show()
-                    },
+                    onClick = onMembershipClick,
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, CineBorder),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
@@ -1025,7 +1050,7 @@ private fun QuickProfileTab(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 2. Card Menu 7 mục (theo đúng thứ tự trong wireframe ảnh 5)
+        // 2. Card Menu 7 mục 
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
@@ -1033,11 +1058,11 @@ private fun QuickProfileTab(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // 1. Hạng thành viên
+                // 1. Hạng thành viên -> Mở MembershipScreen
                 ProfileMenuItem(
                     icon = Icons.Default.Star,
                     title = "Hạng thành viên",
-                    onClick = { Toast.makeText(context, "Mục Hạng thành viên (SCRUM-33)", Toast.LENGTH_SHORT).show() }
+                    onClick = onMembershipClick
                 )
                 HorizontalDivider(color = CineDivider)
 
@@ -1049,11 +1074,11 @@ private fun QuickProfileTab(
                 )
                 HorizontalDivider(color = CineDivider)
 
-                // 3. Voucher của tôi
+                // 3. Voucher của tôi -> Mở VoucherScreen
                 ProfileMenuItem(
                     icon = Icons.Default.LocalActivity,
                     title = "Voucher của tôi",
-                    onClick = { Toast.makeText(context, "Mục Ví Voucher (SCRUM-33)", Toast.LENGTH_SHORT).show() }
+                    onClick = onVouchersClick
                 )
                 HorizontalDivider(color = CineDivider)
 

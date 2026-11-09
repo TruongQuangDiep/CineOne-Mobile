@@ -28,6 +28,8 @@ import com.example.cineone.ui.payment.PaymentScreen
 import com.example.cineone.ui.payment.PaymentResultScreen
 import com.example.cineone.ui.ticket.TicketListScreen
 import com.example.cineone.ui.ticket.TicketDetailScreen
+import com.example.cineone.ui.membership.MembershipScreen
+import com.example.cineone.ui.voucher.VoucherScreen
 
 @Composable
 fun AppNavGraph(
@@ -436,6 +438,14 @@ fun AppNavGraph(
                 navController = navController,
                 ticketId = ticketId
             )
+        }
+
+        composable(Screen.Membership.route) {
+            MembershipScreen(navController = navController)
+        }
+
+        composable(Screen.VoucherList.route) {
+            VoucherScreen(navController = navController)
         }
     }
 }
