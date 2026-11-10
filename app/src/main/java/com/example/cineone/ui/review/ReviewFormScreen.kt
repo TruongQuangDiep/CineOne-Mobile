@@ -98,7 +98,6 @@ fun ReviewFormScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Card tóm tắt phim
             Card(
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
@@ -145,7 +144,6 @@ fun ReviewFormScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Chọn số sao đánh giá (1..5 sao)
             Text(
                 text = "Bạn đánh giá bộ phim này thế nào?",
                 fontSize = 15.sp,
@@ -177,7 +175,6 @@ fun ReviewFormScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Nhãn trạng thái số sao
             val labelIndex = (uiState.formRating - 1).coerceIn(0, 4)
             Text(
                 text = "${uiState.formRating} sao - ${ratingLabels[labelIndex]}",
@@ -188,7 +185,6 @@ fun ReviewFormScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nhập nội dung nhận xét (kèm bộ đếm ký tự 0/500 theo wireframe)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -223,7 +219,6 @@ fun ReviewFormScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Bộ đếm ký tự (khớp wireframe 0/50 hoặc 0/500)
                     Text(
                         text = "${uiState.formContent.length}/500",
                         fontSize = 12.sp,
@@ -246,7 +241,6 @@ fun ReviewFormScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // Nút "Đánh giá" (khớp wireframe [ Đánh giá ])
             Button(
                 onClick = {
                     viewModel.submitReview(movieId) {

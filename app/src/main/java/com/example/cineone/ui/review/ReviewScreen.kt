@@ -39,13 +39,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.CineOneApp
 import com.example.cineone.domain.model.Movie
+import com.example.cineone.domain.model.MovieReviewsData
 import com.example.cineone.domain.model.Review
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
 import com.example.cineone.ui.common.LoadingView
 import com.example.cineone.ui.movie.MoviePosterBox
-import com.example.cineone.ui.movie.formatMovieRatingBadge
 import com.example.cineone.ui.theme.*
 import java.util.Locale
 
@@ -84,7 +84,6 @@ fun ReviewScreen(
         }
     }
 
-    // Lắng nghe khi có phim được chọn từ ViewModel
     LaunchedEffect(uiState.selectedMovie) {
         if (uiState.selectedMovie != null) {
             selectedMovieForReviews = uiState.selectedMovie
@@ -146,7 +145,6 @@ fun ReviewScreen(
                     }
                 }
 
-                // Sub-tabs: "Cộng đồng" và "Đánh giá của tôi"
                 TabRow(
                     selectedTabIndex = uiState.activeTab.ordinal,
                     containerColor = CineBackgroundDark,
@@ -180,6 +178,7 @@ fun ReviewScreen(
                 ReviewTab.COMMUNITY -> {
                     CommunityReviewsTab(
                         movies = uiState.movies,
+                        movieReviewStats = uiState.movieReviewStats,
                         isLoading = uiState.isMoviesLoading,
                         errorMessage = uiState.moviesError,
                         searchQuery = uiState.searchQuery,
@@ -245,7 +244,6 @@ fun ReviewScreen(
         }
     }
 
-    // Modal hiển thị danh sách đánh giá cộng đồng của một phim đã chọn
     if (selectedMovieForReviews != null) {
         val movie = selectedMovieForReviews!!
         MovieReviewsDetailDialog(
@@ -292,7 +290,6 @@ fun ReviewScreen(
         )
     }
 
-    // Dialog thông báo khi không đủ điều kiện RT2
     if (showIneligibilityDialog) {
         AlertDialog(
             onDismissRequest = { showIneligibilityDialog = false },
@@ -338,6 +335,7 @@ fun ReviewScreen(
 @Composable
 private fun CommunityReviewsTab(
     movies: List<Movie>,
+    movieReviewStats: Map<Long, MovieReviewsData>,
     isLoading: Boolean,
     errorMessage: String?,
     searchQuery: String,
@@ -354,7 +352,6 @@ private fun CommunityReviewsTab(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Search Box
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
@@ -413,6 +410,7 @@ private fun CommunityReviewsTab(
                     items(visibleMovies, key = { it.movieId }) { movie ->
                         MovieReviewCard(
                             movie = movie,
+                            reviewStats = movieReviewStats[movie.movieId],
                             onCardClick = { onMovieClick(movie) },
                             onReviewClick = { onReviewActionClick(movie) }
                         )
@@ -445,9 +443,14 @@ private fun CommunityReviewsTab(
 @Composable
 private fun MovieReviewCard(
     movie: Movie,
+    reviewStats: MovieReviewsData?,
     onCardClick: () -> Unit,
     onReviewClick: () -> Unit
 ) {
+    val avgRating = reviewStats?.averageRating
+        ?: (if (movie.rating > 5.0) movie.rating / 2.0 else movie.rating)
+    val reviewCount = reviewStats?.reviewCount
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
@@ -462,7 +465,6 @@ private fun MovieReviewCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Poster
             MoviePosterBox(
                 posterUrl = movie.posterUrl,
                 title = movie.title,
@@ -474,7 +476,6 @@ private fun MovieReviewCard(
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // Details
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
@@ -491,8 +492,9 @@ private fun MovieReviewCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (movie.duration > 0) {
+                    val ageSuffix = if (movie.ageRating.isNotBlank()) " • ${movie.ageRating}" else ""
                     Text(
-                        text = "${movie.duration} phút • ${movie.ageRating.ifBlank { "T13" }}",
+                        text = "${movie.duration} phút$ageSuffix",
                         fontSize = 12.sp,
                         color = CineTextGray
                     )
@@ -500,39 +502,38 @@ private fun MovieReviewCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Rating & Review Count (khớp giao diện PDF: "★ 4.5/5 | 128 đánh giá")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (movie.rating > 0.0) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                        imageVector = if (avgRating > 0.0) Icons.Filled.Star else Icons.Outlined.StarOutline,
                         contentDescription = null,
                         tint = CineWarning,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = if (movie.rating > 0.0) {
-                            val scaled = if (movie.rating > 5.0) movie.rating / 2.0 else movie.rating
-                            String.format(Locale.US, "%.1f/5", scaled).replace(".0/5", "/5")
+                        text = if (avgRating > 0.0) {
+                            String.format(Locale.US, "%.1f/5", avgRating).replace(".0/5", "/5")
                         } else {
-                            "Chưa có"
+                            "Chưa có đánh giá"
                         },
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = CineTextWhite
                     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (movie.rating > 0.0) formatMovieRatingBadge(movie.rating) else "128 đánh giá",
-                        fontSize = 12.sp,
-                        color = CineTextMuted
-                    )
+                    if (reviewCount != null && reviewCount > 0) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$reviewCount đánh giá",
+                            fontSize = 12.sp,
+                            color = CineTextMuted
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Nút Xem (khớp wireframe PDF: nút [Xem])
             Button(
                 onClick = onCardClick,
                 shape = RoundedCornerShape(8.dp),
@@ -605,7 +606,6 @@ private fun MovieReviewsDetailDialog(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // Header tóm tắt thông tin phim
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
@@ -676,7 +676,6 @@ private fun MovieReviewsDetailDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // AI Review Summary (Hiển thị khi có tóm tắt, đang tải hoặc có thông báo lỗi)
                 if (isAiLoading || (aiSummary != null && !aiSummary.summary.isNullOrBlank()) || !aiSummaryError.isNullOrBlank()) {
                     Card(
                         shape = RoundedCornerShape(12.dp),
@@ -752,7 +751,6 @@ private fun MovieReviewsDetailDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Nút "Viết đánh giá" (Kèm kiểm tra điều kiện RT2)
                 Button(
                     onClick = onWriteReviewClick,
                     enabled = !isCheckingEligibility,
@@ -783,7 +781,6 @@ private fun MovieReviewsDetailDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Danh sách review cộng đồng
                 Text(
                     text = "Nhận xét từ khán giả (${reviews.size})",
                     fontSize = 15.sp,
@@ -859,7 +856,6 @@ private fun CommunityReviewItem(review: Review) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // User Avatar
                 Box(
                     modifier = Modifier
                         .size(32.dp)
@@ -894,7 +890,6 @@ private fun CommunityReviewItem(review: Review) {
                     }
                 }
 
-                // Star Rating
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.Star,
@@ -1046,7 +1041,6 @@ private fun MyReviewCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Rating: "4/5" (Khớp PDF wireframe)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.Star,

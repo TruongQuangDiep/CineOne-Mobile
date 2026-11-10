@@ -31,6 +31,7 @@ data class ReviewUiState(
     val activeTab: ReviewTab = ReviewTab.COMMUNITY,
     val searchQuery: String = "",
     val movies: List<Movie> = emptyList(),
+    val movieReviewStats: Map<Long, MovieReviewsData> = emptyMap(),
     val isMoviesLoading: Boolean = false,
     val moviesError: String? = null,
     val myReviews: List<Review> = emptyList(),
@@ -112,6 +113,7 @@ class ReviewViewModel(
                                 moviesError = null
                             )
                         }
+                        loadMovieStatsForList(list)
                     }
                     is Resource.Error -> {
                         _uiState.update {
@@ -198,6 +200,22 @@ class ReviewViewModel(
         }
     }
 
+    private fun loadMovieStatsForList(movies: List<Movie>) {
+        movies.forEach { movie ->
+            viewModelScope.launch {
+                reviewRepository.getMovieReviews(movie.movieId).collect { res ->
+                    if (res is Resource.Success && res.data != null) {
+                        _uiState.update { state ->
+                            state.copy(
+                                movieReviewStats = state.movieReviewStats + (movie.movieId to res.data)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun loadMovieReviews(movieId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isMovieReviewsLoading = true, movieReviewsError = null) }
@@ -206,9 +224,15 @@ class ReviewViewModel(
                     is Resource.Loading -> Unit
                     is Resource.Success -> {
                         _uiState.update {
+                            val updatedStats = if (res.data != null) {
+                                it.movieReviewStats + (movieId to res.data)
+                            } else {
+                                it.movieReviewStats
+                            }
                             it.copy(
                                 isMovieReviewsLoading = false,
                                 movieReviewsData = res.data,
+                                movieReviewStats = updatedStats,
                                 movieReviewsError = null
                             )
                         }
@@ -349,7 +373,6 @@ class ReviewViewModel(
                                 submitErrorMessage = null
                             )
                         }
-                        // Xóa cache dùng chung và phát sự kiện cho mọi màn hình đang mở
                         aiSummaryCache.remove(movieId)
                         reviewUpdateEvent.tryEmit(movieId)
                         onSuccess()
@@ -373,7 +396,6 @@ class ReviewViewModel(
     }
 
     companion object {
-        // Bộ nhớ đệm và sự kiện dùng chung toàn ứng dụng để đồng bộ giữa ReviewScreen và ReviewFormScreen
         private val aiSummaryCache = java.util.concurrent.ConcurrentHashMap<Long, ReviewSummaryResponseDto>()
         private val reviewUpdateEvent = kotlinx.coroutines.flow.MutableSharedFlow<Long>(extraBufferCapacity = 1)
 

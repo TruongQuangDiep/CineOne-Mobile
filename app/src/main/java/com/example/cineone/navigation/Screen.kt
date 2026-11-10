@@ -148,7 +148,6 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object TermsAndPolicies : Screen("terms_and_policies")
 
-    // Review Screens (SCRUM-35 / CINE-31)
     object Review : Screen("review?movieId={movieId}&tab={tab}") {
         fun createRoute(movieId: Long = 0L, tab: String = "ALL"): String =
             "review?movieId=$movieId&tab=$tab"

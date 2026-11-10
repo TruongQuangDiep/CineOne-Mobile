@@ -40,6 +40,5 @@ class NetworkModule(context: Context) {
     // AI Assistant API (SCRUM-26)
     val aiApi by lazy { AiApi(httpClient) }
 
-    // Review API (SCRUM-35)
     val reviewApi by lazy { ReviewApi(httpClient) }
 }

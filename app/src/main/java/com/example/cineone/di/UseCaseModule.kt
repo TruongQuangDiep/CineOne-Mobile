@@ -30,6 +30,5 @@ class UseCaseModule(private val repositoryModule: RepositoryModule) {
     // AI Assistant UseCase (SCRUM-26)
     val askAssistantUseCase by lazy { AskAssistantUseCase(repositoryModule.aiRepository) }
 
-    // Review UseCases (SCRUM-35)
     val createReviewUseCase by lazy { CreateReviewUseCase(repositoryModule.reviewRepository) }
 }

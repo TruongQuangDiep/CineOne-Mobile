@@ -476,7 +476,6 @@ fun AppNavGraph(
             TermsAndPoliciesScreen(navController = navController)
         }
 
-        // 21. Màn hình Đánh giá phim (SCRUM-35 / CINE-31)
         composable(
             route = Screen.Review.route,
             arguments = listOf(
@@ -499,7 +498,6 @@ fun AppNavGraph(
             )
         }
 
-        // 22. Màn hình Form gửi nhận xét & đánh giá (SCRUM-35 / CINE-31.2)
         composable(
             route = Screen.ReviewForm.route,
             arguments = listOf(
@@ -525,7 +523,6 @@ fun AppNavGraph(
             )
         }
 
-        // 23. Màn hình Đánh giá của tôi (SCRUM-35)
         composable(route = Screen.MyReviews.route) {
             ReviewScreen(
                 navController = navController,
