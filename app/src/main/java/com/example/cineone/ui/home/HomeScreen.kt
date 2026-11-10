@@ -1,4 +1,4 @@
-﻿package com.example.cineone.ui.home
+package com.example.cineone.ui.home
 
 import android.Manifest
 import android.app.DatePickerDialog
@@ -83,6 +83,7 @@ import com.example.cineone.domain.model.Movie
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.auth.AuthViewModel
 import com.example.cineone.ui.cinema.CinemaListScreen
+import com.example.cineone.ui.review.ReviewScreen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
 import com.example.cineone.ui.common.LoadingView
@@ -189,6 +190,16 @@ fun HomeScreen(
                 )
             }
 
+            HomeBottomTab.REVIEW -> {
+                ReviewScreen(
+                    navController = navController,
+                    isEmbeddedInHome = true,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
+            }
+
             HomeBottomTab.PROFILE -> {
                 QuickProfileTab(
                     modifier = Modifier
@@ -205,6 +216,9 @@ fun HomeScreen(
                     },
                     onVouchersClick = {
                         navController.navigate(Screen.VoucherList.route)
+                    },
+                    onMyReviewsClick = {
+                        navController.navigate(Screen.MyReviews.route)
                     },
                     onSettingsClick = {
                         navController.navigate(Screen.Settings.route)
@@ -988,6 +1002,7 @@ private fun QuickProfileTab(
     onMembershipClick: () -> Unit = {},
     onMyTicketsClick: () -> Unit = {},
     onVouchersClick: () -> Unit = {},
+    onMyReviewsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onTermsAndPoliciesClick: () -> Unit = {},
     onLogout: () -> Unit
@@ -1167,7 +1182,7 @@ text = userTier,
                 ProfileMenuItem(
                     icon = Icons.Default.RateReview,
                     title = "Đánh giá của tôi",
-                    onClick = { Toast.makeText(context, "Mục Đánh giá (SCRUM-35)", Toast.LENGTH_SHORT).show() }
+                    onClick = onMyReviewsClick
                 )
                 HorizontalDivider(color = CineDivider)
 

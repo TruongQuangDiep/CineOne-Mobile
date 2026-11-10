@@ -54,4 +54,9 @@ class RepositoryModule(private val networkModule: NetworkModule) {
             showtimeRepository = showtimeRepository
         )
     }
+
+    // Review Repository (SCRUM-35)
+    val reviewRepository: ReviewRepository by lazy {
+        ReviewRepositoryImpl(networkModule.reviewApi)
+    }
 }

@@ -92,4 +92,11 @@ object ApiConfig {
         const val CREATE_LINK = "/api/v1/payments/create-link"
         const val STATUS = "/api/v1/payments/status"
     }
+
+    object Review {
+        fun movieReviews(movieId: Long) = "/api/v1/reviews/movie/$movieId"
+        const val MY_REVIEWS = "/api/v1/reviews/my-reviews"
+        fun eligibility(movieId: Long) = "/api/v1/reviews/eligibility/$movieId"
+        const val CREATE = "/api/v1/reviews"
+    }
 }

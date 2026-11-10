@@ -4,6 +4,10 @@ import com.example.cineone.core.util.DateTimeUtils
 import com.example.cineone.core.util.LocationFilterMode
 import com.example.cineone.core.util.LocationUtils
 import com.example.cineone.core.util.TimeSlotFilter
+import com.example.cineone.data.dto.review.MovieReviewItemDto
+import com.example.cineone.data.dto.review.MyReviewItemDto
+import com.example.cineone.data.dto.review.ReviewEligibilityDto
+import com.example.cineone.data.mapper.toDomain
 import com.example.cineone.domain.model.Cinema
 import com.example.cineone.domain.model.Movie
 import com.example.cineone.navigation.Screen
@@ -79,6 +83,55 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun reviewNavigationRoutes_matchExpectedPatterns() {
+        assertEquals("review?movieId=15&tab=ALL", Screen.Review.createRoute(15L, "ALL"))
+        assertEquals("review_form/15?movieTitle=Natra%202&posterUrl=", Screen.ReviewForm.createRoute(15L, "Natra 2"))
+        assertEquals("my_reviews", Screen.MyReviews.route)
+    }
+
+    @Test
+    fun reviewMapper_mapsDtoToDomainCorrectly() {
+        val itemDto = MovieReviewItemDto(
+            reviewId = 101L,
+            userId = 5L,
+            userName = "Nguyễn Văn A",
+            rating = 5,
+            content = "Phim rất hay và ý nghĩa!",
+            createdAt = "10/11/2026 09:30"
+        )
+        val domainReview = itemDto.toDomain()
+        assertEquals(101L, domainReview.reviewId)
+        assertEquals("Nguyễn Văn A", domainReview.userName)
+        assertEquals(5, domainReview.rating)
+        assertEquals("Phim rất hay và ý nghĩa!", domainReview.content)
+
+        val eligDto = ReviewEligibilityDto(
+            eligible = false,
+            alreadyReviewed = false,
+            message = "Bạn cần có vé và đã hoàn thành suất chiếu để đánh giá phim này."
+        )
+        val eligDomain = eligDto.toDomain()
+        assertFalse(eligDomain.eligible)
+        assertFalse(eligDomain.alreadyReviewed)
+        assertTrue(eligDomain.message.contains("Bạn cần có vé"))
+
+        val myReviewDto = MyReviewItemDto(
+            reviewId = 202L,
+            movieId = 10L,
+            movieTitle = "Mai",
+            rating = 4,
+            content = "Diễn xuất tốt.",
+            status = "VISIBLE",
+            createdAt = "09/11/2026 14:00"
+        )
+        val myReviewDomain = myReviewDto.toDomain()
+        assertEquals(202L, myReviewDomain.reviewId)
+        assertEquals("Mai", myReviewDomain.movieTitle)
+        assertEquals(4, myReviewDomain.rating)
+        assertEquals("Tôi", myReviewDomain.userName)
+    }
+
+    @Test
     fun timeSlotFilter_matchesShowtimeHoursCorrectly() {
         assertTrue(TimeSlotFilter.ALL.matches("2026-04-05T09:15:00"))
         assertTrue(TimeSlotFilter.SLOT_8_12.matches("2026-04-05T09:15:00"))
@@ -107,7 +160,6 @@ class ExampleUnitTest {
             longitude = 106.6626
         )
 
-        // Người dùng đang ở Quận Gò Vấp (gần Beta Quang Trung hơn CGV Quận 1)
         val userLat = 10.8360
         val userLon = 106.6630
 
