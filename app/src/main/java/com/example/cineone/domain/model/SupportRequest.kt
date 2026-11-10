@@ -1,8 +1,14 @@
 package com.example.cineone.domain.model
 
 data class SupportRequest(
-    val id: String,
-    val userId: String,
-    val subject: String,
-    val message: String
+    val requestId: Long = 0L,
+    val type: String = "HỖ TRỢ",
+    val category: String = "KHÁC",
+    val content: String = "",
+    val status: String = "PENDING",
+    val response: String? = null,
+    val bookingId: Long? = null,
+    val bookingCode: String? = null,
+    val respondedAt: String? = null,
+    val createdAt: String = ""
 )

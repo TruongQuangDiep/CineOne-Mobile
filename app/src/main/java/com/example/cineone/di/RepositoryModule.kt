@@ -58,4 +58,8 @@ class RepositoryModule(private val networkModule: NetworkModule) {
     val reviewRepository: ReviewRepository by lazy {
         ReviewRepositoryImpl(networkModule.reviewApi)
     }
+
+    val supportRepository: SupportRepository by lazy {
+        SupportRepositoryImpl(networkModule.supportApi)
+    }
 }

@@ -31,4 +31,8 @@ class UseCaseModule(private val repositoryModule: RepositoryModule) {
     val askAssistantUseCase by lazy { AskAssistantUseCase(repositoryModule.aiRepository) }
 
     val createReviewUseCase by lazy { CreateReviewUseCase(repositoryModule.reviewRepository) }
+
+    val createSupportUseCase by lazy { CreateSupportUseCase(repositoryModule.supportRepository) }
+    val getMySupportRequestsUseCase by lazy { GetMySupportRequestsUseCase(repositoryModule.supportRepository) }
+    val getFaqListUseCase by lazy { GetFaqListUseCase(repositoryModule.supportRepository) }
 }

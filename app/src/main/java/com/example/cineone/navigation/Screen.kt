@@ -159,6 +159,16 @@ sealed class Screen(val route: String) {
     }
 
     object MyReviews : Screen("my_reviews")
+
+    object SupportList : Screen("support_list")
+
+    object SupportForm : Screen("support_form?bookingCode={bookingCode}") {
+        fun createRoute(bookingCode: String = ""): String =
+            if (bookingCode.isBlank()) "support_form"
+            else "support_form?bookingCode=${encodeParam(bookingCode)}"
+    }
+
+    object Faq : Screen("faq")
 }
 
 private fun encodeParam(value: String): String {

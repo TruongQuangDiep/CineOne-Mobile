@@ -223,8 +223,11 @@ fun HomeScreen(
                     onSettingsClick = {
                         navController.navigate(Screen.Settings.route)
                     },
+                    onSupportClick = {
+                        navController.navigate(Screen.SupportList.route)
+                    },
                     onTermsAndPoliciesClick = {
-                        navController.navigate(Screen.TermsAndPolicies.route)
+                        navController.navigate(Screen.Faq.route)
                     },
                     onLogout = {
                         runCatching {
@@ -1004,6 +1007,7 @@ private fun QuickProfileTab(
     onVouchersClick: () -> Unit = {},
     onMyReviewsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onSupportClick: () -> Unit = {},
     onTermsAndPoliciesClick: () -> Unit = {},
     onLogout: () -> Unit
 ) {
@@ -1198,7 +1202,7 @@ text = userTier,
                 ProfileMenuItem(
                     icon = Icons.Default.ChatBubbleOutline,
                     title = "Hỗ trợ & khiếu nại",
-                    onClick = { Toast.makeText(context, "Mục Hỗ trợ & khiếu nại (SCRUM-36)", Toast.LENGTH_SHORT).show() }
+                    onClick = onSupportClick
                 )
                 HorizontalDivider(color = CineDivider)
 
@@ -3488,7 +3492,7 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable { navController.navigate(Screen.TermsAndPolicies.route) }
+                    .clickable { navController.navigate(Screen.Faq.route) }
                     .padding(vertical = 10.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -3867,415 +3871,9 @@ private fun ChangePasswordStandardDialog(
     )
 }
 
-// ============================================================================
-// SCRUM-106 (CINE-30.2): MÀN HÌNH CHÍNH SÁCH & ĐIỀU KHOẢN (/I302 - /I313)
-// ============================================================================
-
-private enum class PolicyFilterTab(val label: String, val categoryKey: String) {
-    ALL("Tất cả", "ALL"),
-    FAQ("FAQ", "FAQ"),
-    GUIDE("Hướng dẫn", "GUIDE"),
-    POLICY("Chính sách", "POLICY")
-}
-
-private data class PolicyArticleItem(
-    val id: String,
-    val categoryKey: String,
-    val title: String,
-    val defaultContent: String
-)
-
-private val OFFICIAL_POLICY_ARTICLES = listOf(
-    PolicyArticleItem(
-        id = "faq_book_ticket",
-        categoryKey = "FAQ",
-        title = "Làm thế nào để đặt vé?",
-        defaultContent = "Để đặt vé trên ứng dụng CineOne:\n" +
-            "1. Chọn bộ phim hoặc cụm rạp bạn muốn xem từ Trang chủ hoặc mục Tìm kiếm.\n" +
-            "2. Chọn ngày chiếu, khung giờ chiếu phù hợp.\n" +
-            "3. Chọn vị trí ghế ngồi trên sơ đồ phòng chiếu thời gian thực (ghế được giữ tối đa 10 phút).\n" +
-            "4. Chọn combo bắp nước (nếu có), áp dụng mã Voucher ưu đãi hoặc quyền lợi hạng thành viên.\n" +
-            "5. Thanh toán qua mã QR VietQR (PayOS) để nhận ngay vé điện tử kèm mã QR Check-in."
-    ),
-    PolicyArticleItem(
-        id = "faq_use_voucher",
-        categoryKey = "FAQ",
-        title = "Làm thế nào để sử dụng voucher?",
-        defaultContent = "Tại bước Thanh toán (Checkout), bạn có thể nhập trực tiếp mã Voucher hoặc chọn từ Ví Voucher cá nhân của mình. Hệ thống sẽ tự động kiểm tra điều kiện đơn hàng tối thiểu, thời hạn sử dụng và hạng thành viên để khấu trừ trực tiếp vào tổng tiền thanh toán."
-    ),
-    PolicyArticleItem(
-        id = "faq_update_profile",
-        categoryKey = "FAQ",
-        title = "Làm sao để đổi thông tin tài khoản?",
-        defaultContent = "Bạn truy cập tab 'Tôi' ở thanh điều hướng dưới cùng -> nhấn nút 'Thông tin chi tiết' trên thẻ tài khoản. Tại màn hình 'Thông tin cá nhân', nhấn vào biểu tượng cây bút ở từng mục (Họ và tên, Số điện thoại, Ngày sinh, Địa chỉ nhà) rồi nhấn 'LƯU' để cập nhật."
-    ),
-    PolicyArticleItem(
-        id = "guide_booking",
-        categoryKey = "GUIDE",
-        title = "Hướng dẫn đặt vé",
-        defaultContent = "• Bước 1: Tìm kiếm phim theo tên, thể loại, ngày chiếu hoặc lọc rạp gần vị trí hiện tại / vị trí nhà đã thiết lập.\n" +
-            "• Bước 2: Chọn suất chiếu và ghế ngồi trên sơ đồ phòng chiếu.\n" +
-            "• Bước 3: Kiểm tra thông tin người nhận vé, chọn bắp nước & voucher.\n" +
-            "• Bước 4: Quét mã VietQR trong thời gian giữ ghế 10 phút. Sau khi thanh toán thành công, vé sẽ hiển thị trong mục 'Vé của tôi'."
-    ),
-    PolicyArticleItem(
-        id = "guide_payment",
-        categoryKey = "GUIDE",
-        title = "Hướng dẫn thanh toán",
-        defaultContent = "CineOne hỗ trợ thanh toán trực tuyến qua cổng PayOS (VietQR):\n" +
-            "• Mở ứng dụng Ngân hàng hoặc Ví điện tử hỗ trợ VietQR và quét mã QR hiển thị trên màn hình Thanh toán.\n" +
-            "• Hệ thống tự động điền đúng số tiền và nội dung chuyển khoản.\n" +
-            "• Ngay khi giao dịch hoàn tất, trạng thái đơn đặt vé sẽ tự động chuyển sang Thành công và phát hành mã QR vé điện tử."
-    ),
-    PolicyArticleItem(
-        id = "policy_terms_of_use",
-        categoryKey = "POLICY",
-        title = "Điều khoản sử dụng",
-        defaultContent = "1. Quy định chung: Khi đăng ký và sử dụng ứng dụng CineOne, khách hàng đồng ý tuân thủ các quy định về độ tuổi phân loại phim (P, K, T13, T16, T18) và nội quy tại rạp chiếu.\n" +
-            "2. Quy định giữ ghế & thanh toán: Mỗi phiên giữ ghế có hiệu lực 10 phút. Quá thời gian trên nếu chưa thanh toán, hệ thống sẽ tự động giải phóng ghế.\n" +
-            "3. Chính sách vé đã xuất: Vé điện tử đã thanh toán thành công được dùng để quét mã QR trực tiếp tại quầy kiểm soát vé của rạp."
-    ),
-    PolicyArticleItem(
-        id = "policy_privacy",
-        categoryKey = "POLICY",
-        title = "Chính sách bảo mật",
-        defaultContent = "CineOne cam kết bảo mật tuyệt đối thông tin cá nhân của khách hàng:\n" +
-            "• Thông tin thu thập (Họ tên, Email, Số điện thoại, Ngày sinh, Địa chỉ nhà) chỉ được sử dụng để xác thực tài khoản, gửi vé điện tử, tính khoảng cách từ nhà tới rạp và áp dụng ưu đãi thành viên.\n" +
-            "• Mật khẩu người dùng được mã hóa một chiều (BCrypt) và phiên đăng nhập được bảo vệ bằng chuẩn JWT.\n" +
-            "• CineOne không chia sẻ dữ liệu cá nhân của khách hàng cho bên thứ ba khi chưa có sự đồng ý."
-    )
-)
-
 @Composable
 fun TermsAndPoliciesScreen(
     navController: NavController
 ) {
-    val focusManager = LocalFocusManager.current
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf(PolicyFilterTab.ALL) }
-    var selectedArticle by remember { mutableStateOf<PolicyArticleItem?>(null) }
-    var remoteAnswer by remember { mutableStateOf<String?>(null) }
-    var isLoadingRemote by remember { mutableStateOf(false) }
-
-    val filteredArticles = remember(searchQuery, selectedTab) {
-        val normQuery = LocationUtils.normalizeSearchText(searchQuery)
-        OFFICIAL_POLICY_ARTICLES.filter { item ->
-            val matchesCategory = selectedTab == PolicyFilterTab.ALL || item.categoryKey == selectedTab.categoryKey
-            val matchesQuery = if (normQuery.isBlank()) {
-                true
-            } else {
-                LocationUtils.normalizeSearchText("${item.title} ${item.defaultContent}").contains(normQuery)
-            }
-            matchesCategory && matchesQuery
-        }
-    }
-
-    val faqItems = remember(filteredArticles) { filteredArticles.filter { it.categoryKey == "FAQ" } }
-    val guideItems = remember(filteredArticles) { filteredArticles.filter { it.categoryKey == "GUIDE" } }
-    val policyItems = remember(filteredArticles) { filteredArticles.filter { it.categoryKey == "POLICY" } }
-
-    LaunchedEffect(selectedArticle) {
-        val article = selectedArticle ?: return@LaunchedEffect
-        remoteAnswer = null
-        isLoadingRemote = true
-        val fetched = withContext(Dispatchers.IO) {
-            runCatching {
-                val resp = CineOneApp.instance.networkModule.aiApi.askFaq(article.title)
-                if (resp.success && resp.data != null && resp.data.answer.isNotBlank()) {
-                    resp.data.answer.trim()
-                } else {
-                    null
-                }
-            }.getOrNull()
-        }
-        remoteAnswer = fetched
-        isLoadingRemote = false
-    }
-
-    Scaffold(
-        containerColor = CineBackgroundDark,
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(CineBackgroundDark)
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Quay lại",
-                        tint = CineTextWhite
-                    )
-                }
-                Text(
-                    text = "Chính sách & Điều khoản",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = CineTextWhite,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.width(48.dp))
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // 1. Thanh tìm kiếm câu hỏi hoặc nội dung (/I303)
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = {
-                    Text(
-                        text = "Tìm kiếm câu hỏi hoặc nội dung",
-                        fontSize = 13.sp,
-                        color = CineTextGray
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Tìm kiếm",
-                        tint = CineTextGray,
-                        modifier = Modifier.size(18.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Xóa",
-                                tint = CineTextGray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(24.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = CineTextWhite,
-                    unfocusedTextColor = CineTextWhite,
-                    focusedContainerColor = CineInputBackground,
-                    unfocusedContainerColor = CineInputBackground,
-                    focusedBorderColor = CineRedPrimary,
-                    unfocusedBorderColor = CineBorder
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = CineDivider)
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 2. Thanh lọc Segmented: Tất cả | FAQ | Hướng dẫn | Chính sách (/I304)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(CineSurfaceCard)
-                    .border(1.dp, CineBorder, RoundedCornerShape(8.dp))
-            ) {
-                PolicyFilterTab.entries.forEachIndexed { index, tab ->
-                    val isSelected = tab == selectedTab
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(
-                                if (isSelected) CineRedPrimary.copy(alpha = 0.22f)
-                                else Color.Transparent
-                            )
-                            .clickable { selectedTab = tab }
-                            .padding(vertical = 9.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tab.label,
-                            fontSize = 12.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) CineRedPrimary else CineTextWhite,
-                            maxLines = 1
-                        )
-                    }
-                    if (index < PolicyFilterTab.entries.lastIndex) {
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(34.dp)
-                                .background(CineBorder)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            if (filteredArticles.isEmpty()) {
-                SectionEmptyBox(message = "Không tìm thấy câu hỏi hoặc nội dung phù hợp")
-            } else {
-                // Nhóm 1: Câu hỏi thường gặp (/I305, /I306, /I307, /I308)
-                if (faqItems.isNotEmpty()) {
-                    PolicySectionGroup(
-                        icon = Icons.AutoMirrored.Filled.HelpOutline,
-                        title = "Câu hỏi thường gặp",
-                        items = faqItems,
-                        onItemClick = { selectedArticle = it }
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
-                }
-
-                // Nhóm 2: Hướng dẫn (/I309, /I310, /I311)
-                if (guideItems.isNotEmpty()) {
-                    PolicySectionGroup(
-                        icon = Icons.AutoMirrored.Filled.MenuBook,
-                        title = "Hướng dẫn",
-                        items = guideItems,
-                        onItemClick = { selectedArticle = it }
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
-                }
-
-                // Nhóm 3: Chính sách (/I312, /I313)
-                if (policyItems.isNotEmpty()) {
-                    PolicySectionGroup(
-                        icon = Icons.Default.Book,
-                        title = "Chính sách",
-                        items = policyItems,
-                        onItemClick = { selectedArticle = it }
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
-                }
-            }
-        }
-    }
-
-    if (selectedArticle != null) {
-        val article = selectedArticle!!
-        AlertDialog(
-            onDismissRequest = { selectedArticle = null },
-            containerColor = CineSurfaceCard,
-            title = {
-                Text(
-                    text = article.title,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = CineTextWhite
-                )
-            },
-            text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val contentToShow = remoteAnswer?.takeIf {
-                        it.isNotBlank() && !it.contains("chưa có thông tin", ignoreCase = true)
-                    } ?: article.defaultContent
-
-                    Text(
-                        text = contentToShow,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        color = CineTextWhite
-                    )
-                    if (isLoadingRemote) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                color = CineRedPrimary,
-                                strokeWidth = 2.dp,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = "Đang đồng bộ từ Knowledge Base...",
-                                fontSize = 11.sp,
-                                color = CineTextGray
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { selectedArticle = null }) {
-                    Text("Đóng", color = CineRedPrimary, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun PolicySectionGroup(
-    icon: ImageVector,
-    title: String,
-    items: List<PolicyArticleItem>,
-    onItemClick: (PolicyArticleItem) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 8.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = CineTextWhite,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = CineTextWhite
-            )
-        }
-
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = CineSurfaceCard),
-            border = BorderStroke(1.dp, CineBorder),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                items.forEachIndexed { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onItemClick(item) }
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = item.title,
-                            fontSize = 14.sp,
-                            color = CineTextWhite,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = CineTextGray,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    if (index < items.lastIndex) {
-                        HorizontalDivider(color = CineDivider)
-                    }
-                }
-            }
-        }
-    }
+    com.example.cineone.ui.support.FaqScreen(navController = navController)
 }

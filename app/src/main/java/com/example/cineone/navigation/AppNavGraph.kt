@@ -36,6 +36,9 @@ import com.example.cineone.ui.membership.MembershipScreen
 import com.example.cineone.ui.voucher.VoucherScreen
 import com.example.cineone.ui.review.ReviewScreen
 import com.example.cineone.ui.review.ReviewFormScreen
+import com.example.cineone.ui.support.SupportListScreen
+import com.example.cineone.ui.support.SupportFormScreen
+import com.example.cineone.ui.support.FaqScreen
 
 @Composable
 fun AppNavGraph(
@@ -528,6 +531,30 @@ fun AppNavGraph(
                 navController = navController,
                 initialTab = "MY_REVIEWS"
             )
+        }
+
+        composable(route = Screen.SupportList.route) {
+            SupportListScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.SupportForm.route,
+            arguments = listOf(
+                navArgument("bookingCode") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val bookingCode = backStackEntry.arguments?.getString("bookingCode") ?: ""
+            SupportFormScreen(
+                navController = navController,
+                initialBookingCode = bookingCode
+            )
+        }
+
+        composable(route = Screen.Faq.route) {
+            FaqScreen(navController = navController)
         }
     }
 }
