@@ -147,6 +147,18 @@ sealed class Screen(val route: String) {
     object HomeLocationSetup : Screen("home_location_setup")
     object Settings : Screen("settings")
     object TermsAndPolicies : Screen("terms_and_policies")
+
+    object Review : Screen("review?movieId={movieId}&tab={tab}") {
+        fun createRoute(movieId: Long = 0L, tab: String = "ALL"): String =
+            "review?movieId=$movieId&tab=$tab"
+    }
+
+    object ReviewForm : Screen("review_form/{movieId}?movieTitle={movieTitle}&posterUrl={posterUrl}") {
+        fun createRoute(movieId: Long, movieTitle: String = "", posterUrl: String = ""): String =
+            "review_form/$movieId?movieTitle=${encodeParam(movieTitle)}&posterUrl=${encodeParam(posterUrl)}"
+    }
+
+    object MyReviews : Screen("my_reviews")
 }
 
 private fun encodeParam(value: String): String {

@@ -54,4 +54,8 @@ class RepositoryModule(private val networkModule: NetworkModule) {
             showtimeRepository = showtimeRepository
         )
     }
+
+    val reviewRepository: ReviewRepository by lazy {
+        ReviewRepositoryImpl(networkModule.reviewApi)
+    }
 }

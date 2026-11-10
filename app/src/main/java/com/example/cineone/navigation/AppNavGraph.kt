@@ -34,6 +34,8 @@ import com.example.cineone.ui.ticket.TicketListScreen
 import com.example.cineone.ui.ticket.TicketDetailScreen
 import com.example.cineone.ui.membership.MembershipScreen
 import com.example.cineone.ui.voucher.VoucherScreen
+import com.example.cineone.ui.review.ReviewScreen
+import com.example.cineone.ui.review.ReviewFormScreen
 
 @Composable
 fun AppNavGraph(
@@ -472,6 +474,60 @@ fun AppNavGraph(
         // 20. Màn hình Chính sách & Điều khoản (SCRUM-34 / SCRUM-106)
         composable(route = Screen.TermsAndPolicies.route) {
             TermsAndPoliciesScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.Review.route,
+            arguments = listOf(
+                navArgument("movieId") {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                },
+                navArgument("tab") {
+                    type = NavType.StringType
+                    defaultValue = "COMMUNITY"
+                }
+            )
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getLong("movieId") ?: 0L
+            val tab = backStackEntry.arguments?.getString("tab") ?: "COMMUNITY"
+            ReviewScreen(
+                navController = navController,
+                initialMovieId = movieId,
+                initialTab = tab
+            )
+        }
+
+        composable(
+            route = Screen.ReviewForm.route,
+            arguments = listOf(
+                navArgument("movieId") { type = NavType.LongType },
+                navArgument("movieTitle") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("posterUrl") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getLong("movieId") ?: 0L
+            val movieTitle = backStackEntry.arguments?.getString("movieTitle") ?: ""
+            val posterUrl = backStackEntry.arguments?.getString("posterUrl") ?: ""
+            ReviewFormScreen(
+                navController = navController,
+                movieId = movieId,
+                movieTitle = movieTitle,
+                posterUrl = posterUrl
+            )
+        }
+
+        composable(route = Screen.MyReviews.route) {
+            ReviewScreen(
+                navController = navController,
+                initialTab = "MY_REVIEWS"
+            )
         }
     }
 }
