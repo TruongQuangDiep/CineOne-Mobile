@@ -543,13 +543,19 @@ fun AppNavGraph(
                 navArgument("bookingCode") {
                     type = NavType.StringType
                     defaultValue = ""
+                },
+                navArgument("requestId") {
+                    type = NavType.LongType
+                    defaultValue = 0L
                 }
             )
         ) { backStackEntry ->
             val bookingCode = backStackEntry.arguments?.getString("bookingCode") ?: ""
+            val requestId = backStackEntry.arguments?.getLong("requestId") ?: 0L
             SupportFormScreen(
                 navController = navController,
-                initialBookingCode = bookingCode
+                initialBookingCode = bookingCode,
+                editRequestId = requestId
             )
         }
 

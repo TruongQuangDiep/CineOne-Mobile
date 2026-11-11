@@ -14,6 +14,17 @@ interface SupportRepository {
         bookingCode: String? = null
     ): Flow<Resource<SupportRequest>>
 
+    fun updateSupportRequest(
+        id: Long,
+        type: String,
+        category: String,
+        content: String,
+        bookingId: Long? = null,
+        bookingCode: String? = null
+    ): Flow<Resource<SupportRequest>>
+
+    fun deleteSupportRequest(id: Long): Flow<Resource<Boolean>>
+
     fun getMySupportRequests(): Flow<Resource<List<SupportRequest>>>
 
     fun getSupportDetail(id: Long): Flow<Resource<SupportRequest>>

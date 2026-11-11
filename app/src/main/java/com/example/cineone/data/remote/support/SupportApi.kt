@@ -27,6 +27,17 @@ class SupportApi(private val client: HttpClient) {
         return client.get(ApiConfig.Support.detail(id)).body()
     }
 
+    suspend fun updateSupportRequest(id: Long, request: CreateSupportRequestDto): ApiResponseDto<SupportResponseDto> {
+        return client.put(ApiConfig.Support.detail(id)) {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun deleteSupportRequest(id: Long): ApiResponseDto<Unit?> {
+        return client.delete(ApiConfig.Support.detail(id)).body()
+    }
+
     suspend fun getFaqList(category: String? = null, q: String? = null): ApiResponseDto<List<FaqDto>> {
         return client.get(ApiConfig.Faq.LIST) {
             if (!category.isNullOrBlank()) {

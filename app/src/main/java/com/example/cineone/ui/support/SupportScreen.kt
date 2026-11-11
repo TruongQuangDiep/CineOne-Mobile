@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +46,7 @@ import androidx.navigation.NavController
 import com.example.cineone.CineOneApp
 import com.example.cineone.domain.model.FaqItem
 import com.example.cineone.domain.model.SupportRequest
+import com.example.cineone.domain.model.Ticket
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
@@ -63,13 +65,17 @@ fun SupportListScreen(
     viewModel: SupportViewModel = viewModel(factory = SupportViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val isLoggedIn = remember {
         CineOneApp.instance.networkModule.sessionManager.isLoggedIn()
     }
     var showAllItems by remember { mutableStateOf(false) }
+    var requestToDelete by remember { mutableStateOf<SupportRequest?>(null) }
+    val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         viewModel.loadMyRequests()
+        viewModel.loadUserTicketsForPicker()
     }
 
     val filteredRequests = remember(uiState.myRequests, uiState.selectedStatusFilter) {
@@ -89,6 +95,15 @@ fun SupportListScreen(
     val displayedRequests = remember(filteredRequests, showAllItems) {
         if (showAllItems || filteredRequests.size <= 5) filteredRequests
         else filteredRequests.take(5)
+    }
+
+    val topRequestId = displayedRequests.firstOrNull()?.requestId
+    LaunchedEffect(topRequestId, displayedRequests.size, uiState.selectedStatusFilter) {
+        if (displayedRequests.isNotEmpty()) {
+            listState.scrollToItem(0)
+            kotlinx.coroutines.yield()
+            listState.scrollToItem(0)
+        }
     }
 
     Scaffold(
@@ -300,14 +315,29 @@ fun SupportListScreen(
                     }
                     else -> {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 32.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(displayedRequests, key = { it.requestId }) { req ->
+                                val isPending = req.status.trim().equals("PENDING", ignoreCase = true) && req.response.isNullOrBlank()
                                 SupportRequestItemCard(
                                     request = req,
-                                    onClick = { viewModel.selectRequestDetail(req) }
+                                    onClick = { viewModel.selectRequestDetail(req) },
+                                    onEditClick = if (isPending) {
+                                        {
+                                            navController.navigate(
+                                                Screen.SupportForm.createRoute(
+                                                    bookingCode = req.bookingCode ?: "",
+                                                    requestId = req.requestId
+                                                )
+                                            )
+                                        }
+                                    } else null,
+                                    onDeleteClick = if (isPending) {
+                                        { requestToDelete = req }
+                                    } else null
                                 )
                             }
 
@@ -346,9 +376,93 @@ fun SupportListScreen(
 
     if (uiState.selectedRequestDetail != null) {
         val detail = uiState.selectedRequestDetail!!
+        val isPending = detail.status.trim().equals("PENDING", ignoreCase = true) && detail.response.isNullOrBlank()
+        val relatedTicket = remember(detail.bookingCode, detail.bookingId, uiState.userTickets) {
+            val code = detail.bookingCode?.trim().orEmpty()
+            uiState.userTickets.find { t ->
+                val tCode = t.ticketCode.ifBlank { "TCK-${t.ticketId}" }
+                (code.isNotBlank() && tCode.equals(code, ignoreCase = true)) ||
+                    (detail.bookingId != null && t.ticketId == detail.bookingId)
+            }
+        }
         SupportRequestDetailDialog(
             request = detail,
-            onDismiss = { viewModel.selectRequestDetail(null) }
+            relatedTicket = relatedTicket,
+            onDismiss = { viewModel.selectRequestDetail(null) },
+            onEditClick = if (isPending) {
+                {
+                    viewModel.selectRequestDetail(null)
+                    navController.navigate(
+                        Screen.SupportForm.createRoute(
+                            bookingCode = detail.bookingCode ?: "",
+                            requestId = detail.requestId
+                        )
+                    )
+                }
+            } else null,
+            onDeleteClick = if (isPending) {
+                {
+                    viewModel.selectRequestDetail(null)
+                    requestToDelete = detail
+                }
+            } else null
+        )
+    }
+
+    if (requestToDelete != null) {
+        val target = requestToDelete!!
+        AlertDialog(
+            onDismissRequest = { if (!uiState.isDeleting) requestToDelete = null },
+            containerColor = CineSurfaceCard,
+            shape = RoundedCornerShape(14.dp),
+            title = {
+                Text(
+                    text = "Xác nhận xóa yêu cầu",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CineTextWhite
+                )
+            },
+            text = {
+                Text(
+                    text = "Bạn có chắc chắn muốn xóa yêu cầu \"${formatDisplayType(target.type)} • ${formatDisplayCategory(target.category)}\" này không?",
+                    fontSize = 13.sp,
+                    color = CineTextGray,
+                    lineHeight = 19.sp
+                )
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { requestToDelete = null },
+                    enabled = !uiState.isDeleting,
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, CineBorder)
+                ) {
+                    Text("Hủy", color = CineTextWhite)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteSupportRequest(
+                            requestId = target.requestId,
+                            onSuccess = {
+                                requestToDelete = null
+                                Toast.makeText(context, "Đã xóa yêu cầu thành công!", Toast.LENGTH_SHORT).show()
+                            },
+                            onError = { msg ->
+                                requestToDelete = null
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
+                    enabled = !uiState.isDeleting,
+                    colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Xóa", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
         )
     }
 }
@@ -372,7 +486,7 @@ private fun formatDisplayCategory(category: String): String {
 @Composable
 private fun statusLabelAndColor(status: String): Pair<String, Color> {
     return when (status.trim().uppercase()) {
-        "PENDING" -> "Đang xử lý" to CineWarning
+        "PENDING" -> "Chờ xử lý" to CineWarning
         "IN_PROGRESS", "PROCESSING" -> "Đang xử lý" to Color(0xFF38BDF8)
         "RESOLVED" -> "Đã giải quyết" to CineSuccess
         "REJECTED", "CLOSED" -> "Từ chối" to CineError
@@ -383,7 +497,9 @@ private fun statusLabelAndColor(status: String): Pair<String, Color> {
 @Composable
 private fun SupportRequestItemCard(
     request: SupportRequest,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     val (statusText, statusColor) = statusLabelAndColor(request.status)
     val dateOnly = request.createdAt.substringBefore(" ").ifBlank { request.createdAt }
@@ -397,12 +513,51 @@ private fun SupportRequestItemCard(
             .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = "${formatDisplayType(request.type)} • ${formatDisplayCategory(request.category)}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = CineTextWhite
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${formatDisplayType(request.type)} • ${formatDisplayCategory(request.category)}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CineTextWhite,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (onEditClick != null) {
+                        IconButton(
+                            onClick = onEditClick,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Sửa yêu cầu",
+                                tint = CineTextGray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    if (onDeleteClick != null) {
+                        IconButton(
+                            onClick = onDeleteClick,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Xóa yêu cầu",
+                                tint = CineError,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -483,7 +638,10 @@ fun SupportStatusBadge(status: String) {
 @Composable
 private fun SupportRequestDetailDialog(
     request: SupportRequest,
-    onDismiss: () -> Unit
+    relatedTicket: Ticket? = null,
+    onDismiss: () -> Unit,
+    onEditClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -513,13 +671,54 @@ private fun SupportRequestDetailDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                if (!request.bookingCode.isNullOrBlank()) {
-                    Text(
-                        text = "Mã vé liên quan: ${request.bookingCode}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = CineWarning
-                    )
+                if (!request.bookingCode.isNullOrBlank() || relatedTicket != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(CineInputBackground)
+                            .border(1.dp, CineWarning.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .padding(10.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (relatedTicket != null && relatedTicket.movieTitle.isNotBlank()) {
+                                Text(
+                                    text = relatedTicket.movieTitle,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CineTextWhite
+                                )
+                            }
+                            Text(
+                                text = "Mã vé liên quan: ${request.bookingCode ?: relatedTicket?.ticketCode.orEmpty()}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = CineWarning
+                            )
+                            if (relatedTicket != null) {
+                                val cinemaRoom = listOfNotNull(
+                                    relatedTicket.cinemaName.takeIf { it.isNotBlank() },
+                                    relatedTicket.roomName.takeIf { it.isNotBlank() }
+                                ).joinToString(" • ")
+                                if (cinemaRoom.isNotBlank()) {
+                                    Text(
+                                        text = "Rạp: $cinemaRoom",
+                                        fontSize = 12.sp,
+                                        color = CineTextGray
+                                    )
+                                }
+                                val showDateTime = "${relatedTicket.showDate} ${relatedTicket.showTime}".trim()
+                                val seatInfo = relatedTicket.seatCodes.takeIf { it.isNotBlank() }?.let { " • Ghế: $it" }.orEmpty()
+                                if (showDateTime.isNotBlank() || seatInfo.isNotBlank()) {
+                                    Text(
+                                        text = "Suất chiếu: $showDateTime$seatInfo",
+                                        fontSize = 12.sp,
+                                        color = CineTextGray
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (request.createdAt.isNotBlank()) {
@@ -608,13 +807,52 @@ private fun SupportRequestDetailDialog(
                 }
             }
         },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (onDeleteClick != null) {
+                    OutlinedButton(
+                        onClick = onDeleteClick,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, CineError),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = null,
+                            tint = CineError,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xóa", color = CineError, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                if (onEditClick != null) {
+                    OutlinedButton(
+                        onClick = onEditClick,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, CineBorder),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = CineTextWhite,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Sửa", color = CineTextWhite, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        },
         confirmButton = {
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                Text("Đóng", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Đóng", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -625,18 +863,23 @@ private fun SupportRequestDetailDialog(
 fun SupportFormScreen(
     navController: NavController,
     initialBookingCode: String = "",
+    editRequestId: Long = 0L,
     viewModel: SupportViewModel = viewModel(factory = SupportViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val isEditMode = editRequestId > 0L
 
     var typeDropdownExpanded by remember { mutableStateOf(false) }
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
     var ticketPickerExpanded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(initialBookingCode) {
+    LaunchedEffect(initialBookingCode, editRequestId) {
         viewModel.resetForm(initialBookingCode = initialBookingCode)
         viewModel.loadUserTicketsForPicker()
+        if (editRequestId > 0L) {
+            viewModel.loadRequestForEdit(editRequestId)
+        }
     }
 
     Scaffold(
@@ -663,7 +906,7 @@ fun SupportFormScreen(
                     }
 
                     Text(
-                        text = "Gửi yêu cầu",
+                        text = if (isEditMode) "Chỉnh sửa yêu cầu" else "Gửi yêu cầu",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = CineTextWhite,
@@ -796,50 +1039,57 @@ fun SupportFormScreen(
                 }
             }
 
-            if (uiState.formBookingCode.isNotBlank() || uiState.formCategory.equals("VÉ", ignoreCase = true) || uiState.formCategory.equals("THANH TOÁN", ignoreCase = true)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Mã vé liên quan (Tùy chọn)",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = CineTextWhite
-                        )
-                        if (uiState.userTickets.isNotEmpty()) {
-                            Text(
-                                text = "Chọn từ vé của tôi",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = CineRedPrimary,
-                                modifier = Modifier.clickable { ticketPickerExpanded = true }
-                            )
-                        }
-                    }
+            val selectedTicket = remember(uiState.formBookingCode, uiState.userTickets) {
+                uiState.userTickets.find {
+                    val code = it.ticketCode.ifBlank { "TCK-${it.ticketId}" }
+                    code.equals(uiState.formBookingCode, ignoreCase = true)
+                }
+            }
+            val displayTicketValue = when {
+                uiState.formBookingCode.isBlank() -> ""
+                selectedTicket != null -> "${selectedTicket.movieTitle} • ${uiState.formBookingCode}"
+                else -> uiState.formBookingCode
+            }
 
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Mã vé liên quan (Tùy chọn)",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = CineTextWhite
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = ticketPickerExpanded,
+                    onExpandedChange = { ticketPickerExpanded = !ticketPickerExpanded }
+                ) {
                     OutlinedTextField(
-                        value = uiState.formBookingCode,
-                        onValueChange = { viewModel.setFormBookingCode(it, null) },
+                        value = displayTicketValue,
+                        onValueChange = {},
+                        readOnly = true,
                         placeholder = {
                             Text(
-                                text = "Nhập mã vé (nếu có)...",
+                                text = "Chọn vé từ danh sách vé của tôi...",
                                 fontSize = 13.sp,
                                 color = CineTextMuted
                             )
                         },
                         trailingIcon = {
-                            if (uiState.formBookingCode.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.setFormBookingCode("", null) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Xóa",
-                                        tint = CineTextGray,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (uiState.formBookingCode.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { viewModel.setFormBookingCode("", null) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Bỏ chọn mã vé",
+                                            tint = CineTextGray,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = ticketPickerExpanded)
                             }
                         },
                         singleLine = true,
@@ -852,8 +1102,78 @@ fun SupportFormScreen(
                             focusedTextColor = CineTextWhite,
                             unfocusedTextColor = CineTextWhite
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
                     )
+
+                    ExposedDropdownMenu(
+                        expanded = ticketPickerExpanded,
+                        onDismissRequest = { ticketPickerExpanded = false },
+                        modifier = Modifier
+                            .background(CineSurfaceCard)
+                            .heightIn(max = 300.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Không chọn mã vé (Tự mô tả trong nội dung)",
+                                    fontSize = 13.sp,
+                                    color = if (uiState.formBookingCode.isBlank()) CineRedPrimary else CineTextGray,
+                                    fontWeight = if (uiState.formBookingCode.isBlank()) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            onClick = {
+                                viewModel.setFormBookingCode("", null)
+                                ticketPickerExpanded = false
+                            }
+                        )
+
+                        if (uiState.userTickets.isEmpty()) {
+                            HorizontalDivider(color = CineDivider)
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Bạn chưa có vé nào — vui lòng mô tả trong phần nội dung.",
+                                        fontSize = 12.sp,
+                                        color = CineTextMuted
+                                    )
+                                },
+                                onClick = { ticketPickerExpanded = false },
+                                enabled = false
+                            )
+                        } else {
+                            uiState.userTickets.forEach { t ->
+                                val code = t.ticketCode.ifBlank { "TCK-${t.ticketId}" }
+                                val isSelected = uiState.formBookingCode.equals(code, ignoreCase = true)
+                                HorizontalDivider(color = CineDivider)
+                                DropdownMenuItem(
+                                    text = {
+                                        Column(
+                                            modifier = Modifier.padding(vertical = 4.dp),
+                                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            Text(
+                                                text = "${t.movieTitle} • $code",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) CineRedPrimary else CineTextWhite
+                                            )
+                                            Text(
+                                                text = "${t.cinemaName} • ${t.showDate} ${t.showTime}".trim(),
+                                                fontSize = 11.sp,
+                                                color = CineTextGray
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.setFormBookingCode(code, null)
+                                        ticketPickerExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -906,7 +1226,7 @@ fun SupportFormScreen(
                     viewModel.submitSupportRequest {
                         Toast.makeText(
                             context,
-                            "Gửi yêu cầu thành công!",
+                            if (isEditMode) "Cập nhật yêu cầu thành công!" else "Gửi yêu cầu thành công!",
                             Toast.LENGTH_SHORT
                         ).show()
                         navController.popBackStack()
@@ -928,71 +1248,13 @@ fun SupportFormScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Text(
-                    text = "Gửi yêu cầu",
+                    text = if (isEditMode) "Cập nhật yêu cầu" else "Gửi yêu cầu",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             }
         }
-    }
-
-    if (ticketPickerExpanded) {
-        AlertDialog(
-            onDismissRequest = { ticketPickerExpanded = false },
-            containerColor = CineSurfaceCard,
-            title = {
-                Text(
-                    text = "Chọn vé liên quan",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = CineTextWhite
-                )
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 320.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    uiState.userTickets.forEach { t ->
-                        val code = t.ticketCode.ifBlank { "TCK-${t.ticketId}" }
-                        Card(
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(containerColor = CineInputBackground),
-                            border = BorderStroke(1.dp, CineBorder),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.setFormBookingCode(code, null)
-                                    ticketPickerExpanded = false
-                                }
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = "$code • ${t.movieTitle}",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = CineTextWhite
-                                )
-                                Text(
-                                    text = "${t.cinemaName} • ${t.showDate} ${t.showTime}".trim(),
-                                    fontSize = 11.sp,
-                                    color = CineTextGray
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { ticketPickerExpanded = false }) {
-                    Text("Đóng", color = CineRedPrimary)
-                }
-            }
-        )
     }
 }
 

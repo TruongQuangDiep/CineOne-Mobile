@@ -37,6 +37,7 @@ data class SupportUiState(
     val requestsError: String? = null,
     val selectedStatusFilter: String = "ALL",
     val selectedRequestDetail: SupportRequest? = null,
+    val editingRequestId: Long? = null,
     val formType: String = "HỖ TRỢ",
     val formCategory: String = "THANH TOÁN",
     val formBookingId: Long? = null,
@@ -44,6 +45,7 @@ data class SupportUiState(
     val formContent: String = "",
     val userTickets: List<Ticket> = emptyList(),
     val isSubmitting: Boolean = false,
+    val isDeleting: Boolean = false,
     val submitSuccess: Boolean = false,
     val submitErrorMessage: String? = null,
     val faqItems: List<FaqItem> = emptyList(),
@@ -68,6 +70,7 @@ class SupportViewModel(
 
     init {
         loadFaqList()
+        loadUserTicketsForPicker()
         viewModelScope.launch {
             supportUpdatedEvent.collect {
                 loadMyRequests()
@@ -178,6 +181,7 @@ class SupportViewModel(
     fun resetForm(initialBookingCode: String = "") {
         _uiState.update {
             it.copy(
+                editingRequestId = null,
                 formType = "HỖ TRỢ",
                 formCategory = "THANH TOÁN",
                 formBookingId = null,
@@ -185,6 +189,49 @@ class SupportViewModel(
                 formContent = "",
                 isSubmitting = false,
                 submitSuccess = false,
+                submitErrorMessage = null
+            )
+        }
+    }
+
+    fun loadRequestForEdit(requestId: Long) {
+        if (requestId <= 0L) return
+        val existing = _uiState.value.myRequests.find { it.requestId == requestId }
+        if (existing != null) {
+            applyEditRequest(existing)
+        }
+        viewModelScope.launch {
+            supportRepository.getSupportDetail(requestId).collect { res ->
+                if (res is Resource.Success) {
+                    applyEditRequest(res.data)
+                }
+            }
+        }
+    }
+
+    private fun applyEditRequest(req: SupportRequest) {
+        val normalizedType = when {
+            req.type.trim().uppercase().contains("KHIẾU") ||
+                req.type.trim().uppercase().contains("KHIEU") ||
+                req.type.trim().equals("COMPLAINT", ignoreCase = true) -> "KHIẾU NẠI"
+            else -> "HỖ TRỢ"
+        }
+        val normalizedCategory = when (req.category.trim().uppercase()) {
+            "THANH TOÁN", "PAYMENT" -> "THANH TOÁN"
+            "VÉ", "TICKET", "BOOKING", "ĐẶT VÉ" -> "VÉ"
+            "ĐÁNH GIÁ", "REVIEW" -> "ĐÁNH GIÁ"
+            "TÀI KHOẢN", "ACCOUNT" -> "TÀI KHOẢN"
+            "KHÁC", "OTHER" -> "KHÁC"
+            else -> req.category.ifBlank { "THANH TOÁN" }
+        }
+        _uiState.update {
+            it.copy(
+                editingRequestId = req.requestId,
+                formType = normalizedType,
+                formCategory = normalizedCategory,
+                formBookingId = req.bookingId,
+                formBookingCode = req.bookingCode ?: "",
+                formContent = req.content,
                 submitErrorMessage = null
             )
         }
@@ -202,38 +249,87 @@ class SupportViewModel(
             return
         }
 
+        val editId = state.editingRequestId
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, submitErrorMessage = null, submitSuccess = false) }
-            createSupportUseCase(
-                type = state.formType,
-                category = state.formCategory,
-                content = content,
-                bookingId = state.formBookingId,
-                bookingCode = state.formBookingCode.trim().takeIf { it.isNotBlank() }
-            ).collect { res ->
+            val flow = if (editId != null && editId > 0L) {
+                supportRepository.updateSupportRequest(
+                    id = editId,
+                    type = state.formType,
+                    category = state.formCategory,
+                    content = content,
+                    bookingId = state.formBookingId,
+                    bookingCode = state.formBookingCode.trim().takeIf { it.isNotBlank() }
+                )
+            } else {
+                createSupportUseCase(
+                    type = state.formType,
+                    category = state.formCategory,
+                    content = content,
+                    bookingId = state.formBookingId,
+                    bookingCode = state.formBookingCode.trim().takeIf { it.isNotBlank() }
+                )
+            }
+            flow.collect { res ->
                 when (res) {
                     is Resource.Loading -> Unit
                     is Resource.Success -> {
-                        val created = res.data
+                        val saved = res.data
                         _uiState.update {
+                            val updatedList = if (editId != null && editId > 0L) {
+                                it.myRequests.map { item -> if (item.requestId == saved.requestId) saved else item }
+                            } else {
+                                listOf(saved) + it.myRequests.filterNot { item -> item.requestId == saved.requestId }
+                            }
                             it.copy(
                                 isSubmitting = false,
                                 submitSuccess = true,
                                 submitErrorMessage = null,
-                                myRequests = listOf(created) + it.myRequests.filterNot { item -> item.requestId == created.requestId }
+                                myRequests = updatedList
                             )
                         }
                         supportUpdatedEvent.tryEmit(Unit)
-                        onSuccess(created)
+                        onSuccess(saved)
                     }
                     is Resource.Error -> {
                         _uiState.update {
                             it.copy(
                                 isSubmitting = false,
                                 submitSuccess = false,
-                                submitErrorMessage = res.message ?: "Gửi yêu cầu thất bại, vui lòng thử lại."
+                                submitErrorMessage = res.message ?: "Lưu yêu cầu thất bại, vui lòng thử lại."
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteSupportRequest(
+        requestId: Long,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        if (requestId <= 0L) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true) }
+            supportRepository.deleteSupportRequest(requestId).collect { res ->
+                when (res) {
+                    is Resource.Loading -> Unit
+                    is Resource.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isDeleting = false,
+                                selectedRequestDetail = if (it.selectedRequestDetail?.requestId == requestId) null else it.selectedRequestDetail,
+                                myRequests = it.myRequests.filterNot { item -> item.requestId == requestId }
+                            )
+                        }
+                        supportUpdatedEvent.tryEmit(Unit)
+                        onSuccess()
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(isDeleting = false) }
+                        onError(res.message ?: "Xóa yêu cầu thất bại.")
                     }
                 }
             }

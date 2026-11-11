@@ -162,10 +162,9 @@ sealed class Screen(val route: String) {
 
     object SupportList : Screen("support_list")
 
-    object SupportForm : Screen("support_form?bookingCode={bookingCode}") {
-        fun createRoute(bookingCode: String = ""): String =
-            if (bookingCode.isBlank()) "support_form"
-            else "support_form?bookingCode=${encodeParam(bookingCode)}"
+    object SupportForm : Screen("support_form?bookingCode={bookingCode}&requestId={requestId}") {
+        fun createRoute(bookingCode: String = "", requestId: Long = 0L): String =
+            "support_form?bookingCode=${encodeParam(bookingCode)}&requestId=$requestId"
     }
 
     object Faq : Screen("faq")
