@@ -106,6 +106,14 @@ object ApiConfig {
         fun detail(id: Long) = "/api/v1/support/$id"
     }
 
+    object Notification {
+        const val LIST = "/api/v1/notifications"
+        const val UNREAD_COUNT = "/api/v1/notifications/unread-count"
+        fun markRead(id: Long) = "/api/v1/notifications/$id/read"
+        const val MARK_ALL_READ = "/api/v1/notifications/read-all"
+        fun detail(id: Long) = "/api/v1/notifications/$id"
+    }
+
     object Faq {
         const val LIST = "/api/v1/faq"
     }

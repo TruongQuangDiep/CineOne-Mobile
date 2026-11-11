@@ -1,7 +1,9 @@
 package com.example.cineone.data.repository
 
+import com.example.cineone.CineOneApp
 import com.example.cineone.core.auth.SessionManager
 import com.example.cineone.core.common.Resource
+import com.example.cineone.core.notification.AppNotificationHelper
 import com.example.cineone.data.dto.auth.LoginRequestDto
 import com.example.cineone.data.dto.auth.OtpVerificationDto
 import com.example.cineone.data.dto.auth.RegisterRequestDto
@@ -34,6 +36,7 @@ class AuthRepositoryImpl(
                     )
                 }
                 sessionManager.saveUserProfile(domainUser)
+                AppNotificationHelper.subscribeUserTopic(CineOneApp.instance, authData.user.userId)
                 emit(Resource.Success(domainUser))
             } else {
                 emit(Resource.Error(response.message ?: "Đăng nhập thất bại"))
@@ -54,6 +57,7 @@ class AuthRepositoryImpl(
                 }
                 val domainUser = authData.user.toDomain()
                 sessionManager.saveUserProfile(domainUser)
+                AppNotificationHelper.subscribeUserTopic(CineOneApp.instance, authData.user.userId)
                 emit(Resource.Success(domainUser))
             } else {
                 emit(Resource.Error(response.message ?: "Đăng ký thất bại"))

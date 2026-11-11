@@ -62,4 +62,8 @@ class RepositoryModule(private val networkModule: NetworkModule) {
     val supportRepository: SupportRepository by lazy {
         SupportRepositoryImpl(networkModule.supportApi)
     }
+
+    val notificationRepository: NotificationRepository by lazy {
+        NotificationRepositoryImpl(networkModule.notificationApi)
+    }
 }
