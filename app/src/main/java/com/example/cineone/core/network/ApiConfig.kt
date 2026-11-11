@@ -99,4 +99,14 @@ object ApiConfig {
         fun eligibility(movieId: Long) = "/api/v1/reviews/eligibility/$movieId"
         const val CREATE = "/api/v1/reviews"
     }
+
+    object Support {
+        const val CREATE = "/api/v1/support"
+        const val MY_REQUESTS = "/api/v1/support/my-requests"
+        fun detail(id: Long) = "/api/v1/support/$id"
+    }
+
+    object Faq {
+        const val LIST = "/api/v1/faq"
+    }
 }

@@ -280,6 +280,28 @@ fun TicketDetailScreen(
                     Spacer(Modifier.height(10.dp))
 
                     OutlinedButton(
+                        onClick = {
+                            navController.navigate(
+                                com.example.cineone.navigation.Screen.SupportForm.createRoute(
+                                    bookingCode = ticket.ticketCode
+                                )
+                            )
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CineRedPrimary),
+                        border = BorderStroke(1.dp, CineRedPrimary.copy(alpha = 0.7f)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                    ) {
+                        Icon(Icons.Default.SupportAgent, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Gửi yêu cầu hỗ trợ / khiếu nại cho vé này", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    OutlinedButton(
                         onClick = { navController.popBackStack() },
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CineTextGray),
                         border = BorderStroke(1.dp, CineBorder),

@@ -16,6 +16,7 @@ import com.example.cineone.data.remote.voucher.VoucherApi
 import com.example.cineone.data.remote.payment.PaymentApi
 import com.example.cineone.data.remote.membership.MembershipApi
 import com.example.cineone.data.remote.review.ReviewApi
+import com.example.cineone.data.remote.support.SupportApi
 import io.ktor.client.*
 
 class NetworkModule(context: Context) {
@@ -41,4 +42,6 @@ class NetworkModule(context: Context) {
     val aiApi by lazy { AiApi(httpClient) }
 
     val reviewApi by lazy { ReviewApi(httpClient) }
+
+    val supportApi by lazy { SupportApi(httpClient) }
 }
