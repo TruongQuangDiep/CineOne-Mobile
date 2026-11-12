@@ -38,6 +38,8 @@ import com.example.cineone.ui.review.ReviewScreen
 import com.example.cineone.ui.review.ReviewFormScreen
 import com.example.cineone.ui.support.SupportListScreen
 import com.example.cineone.ui.support.SupportFormScreen
+import com.example.cineone.ui.notification.NotificationScreen
+import com.example.cineone.ui.notification.NotificationDetailScreen
 import com.example.cineone.ui.support.FaqScreen
 
 @Composable
@@ -561,6 +563,21 @@ fun AppNavGraph(
 
         composable(route = Screen.Faq.route) {
             FaqScreen(navController = navController)
+        }
+
+        composable(route = Screen.Notification.route) {
+            NotificationScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.NotificationDetail.route,
+            arguments = listOf(navArgument("notificationId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val notificationId = backStackEntry.arguments?.getLong("notificationId") ?: 0L
+            NotificationDetailScreen(
+                navController = navController,
+                notificationId = notificationId
+            )
         }
     }
 }

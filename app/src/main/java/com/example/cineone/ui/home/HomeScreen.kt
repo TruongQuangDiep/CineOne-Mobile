@@ -77,6 +77,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.CineOneApp
+import com.example.cineone.core.notification.AppNotificationHelper
+import com.example.cineone.core.common.Resource
+import com.example.cineone.core.notification.NotificationEventBus
 import com.example.cineone.core.util.LocationUtils
 import com.example.cineone.data.repository.CinemaRepositoryImpl
 import com.example.cineone.domain.model.Movie
@@ -90,6 +93,7 @@ import com.example.cineone.ui.common.LoadingView
 import com.example.cineone.ui.movie.MoviePosterBox
 import com.example.cineone.ui.movie.formatMovieRatingBadge
 import com.example.cineone.ui.movie.normalizeAgeBadge
+import com.example.cineone.ui.notification.NotificationScreen
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.cineone.ui.theme.*
 import kotlinx.coroutines.Dispatchers
@@ -117,6 +121,22 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val unreadNotificationCount by NotificationEventBus.unreadCount.collectAsState()
+
+    LaunchedEffect(Unit) {
+        val sessionManager = CineOneApp.instance.networkModule.sessionManager
+        if (sessionManager.isLoggedIn()) {
+            CineOneApp.instance.repositoryModule.notificationRepository
+                .getMyNotifications()
+                .collect { res ->
+                    if (res is Resource.Success) {
+                        NotificationEventBus.updateUnreadCount(res.data.count { !it.isRead })
+                    }
+                }
+        } else {
+            NotificationEventBus.updateUnreadCount(0)
+        }
+    }
 
     var selectedBottomTabName by rememberSaveable {
         val initial = context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
@@ -137,6 +157,7 @@ fun HomeScreen(
         bottomBar = {
             CineOneBottomBar(
                 selectedTab = selectedBottomTab,
+                unreadNotificationCount = unreadNotificationCount,
                 onTabSelected = { tab ->
                     selectedBottomTabName = tab.name
                     context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
@@ -230,6 +251,7 @@ fun HomeScreen(
                         navController.navigate(Screen.Faq.route)
                     },
                     onLogout = {
+                        AppNotificationHelper.unsubscribeUserTopic(context)
                         runCatching {
                             CineOneApp.instance.networkModule.sessionManager.clearSession()
                         }
@@ -237,6 +259,16 @@ fun HomeScreen(
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
                     }
+                )
+            }
+
+            HomeBottomTab.NOTIFICATION -> {
+                NotificationScreen(
+                    navController = navController,
+                    isEmbeddedInHome = true,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 )
             }
 
@@ -960,6 +992,7 @@ private fun FeaturedReviewsCarousel(
 @Composable
 private fun CineOneBottomBar(
     selectedTab: HomeBottomTab,
+    unreadNotificationCount: Int,
     onTabSelected: (HomeBottomTab) -> Unit
 ) {
     NavigationBar(
@@ -972,11 +1005,36 @@ private fun CineOneBottomBar(
                 selected = selected,
                 onClick = { onTabSelected(tab) },
                 icon = {
-                    Icon(
-                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                        contentDescription = tab.label,
-                        modifier = Modifier.size(22.dp)
-                    )
+                    val iconComposable: @Composable () -> Unit = {
+                        Icon(
+                            imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                            contentDescription = tab.label,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    if (tab == HomeBottomTab.NOTIFICATION && unreadNotificationCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = CineRedPrimary,
+                                    contentColor = Color.White,
+                                    modifier = Modifier.offset(x = 2.dp, y = (-2).dp)
+                                ) {
+                                    Text(
+                                        text = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString(),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        ) {
+                            iconComposable()
+                        }
+                    } else {
+                        iconComposable()
+                    }
                 },
                 label = {
                     Text(
@@ -3279,7 +3337,7 @@ fun SettingsScreen(
         mutableStateOf(settingsPrefs.getBoolean("notif_promo", true))
     }
     var reminderNotificationEnabled by remember {
-        mutableStateOf(settingsPrefs.getBoolean("notif_reminder", false))
+        mutableStateOf(settingsPrefs.getBoolean("notif_reminder", true))
     }
 
     val currentThemeMode by AppThemePreferences.themeMode.collectAsState()

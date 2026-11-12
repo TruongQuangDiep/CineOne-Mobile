@@ -17,6 +17,7 @@ import com.example.cineone.data.remote.payment.PaymentApi
 import com.example.cineone.data.remote.membership.MembershipApi
 import com.example.cineone.data.remote.review.ReviewApi
 import com.example.cineone.data.remote.support.SupportApi
+import com.example.cineone.data.remote.notification.NotificationApi
 import io.ktor.client.*
 
 class NetworkModule(context: Context) {
@@ -32,6 +33,7 @@ class NetworkModule(context: Context) {
     val paymentApi by lazy { PaymentApi(httpClient) }
 
     val membershipApi by lazy { MembershipApi(httpClient) }
+    val notificationApi by lazy { NotificationApi(httpClient) }
 
     // Catalog APIs (SCRUM-23)
     val movieApi by lazy { MovieApi(httpClient) }
