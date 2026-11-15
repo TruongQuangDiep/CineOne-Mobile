@@ -27,6 +27,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.navigation.Screen
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import com.example.cineone.R
+import androidx.compose.foundation.Image
 import com.example.cineone.ui.theme.*
 
 @Composable
@@ -69,11 +73,21 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Logo & Slogan
+            // [Logo] theo đúng bản phác thảo wireframe
+            Image(
+                painter = painterResource(id = R.drawable.logo_c1),
+                contentDescription = "CineOne Logo",
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(RoundedCornerShape(18.dp))
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // CineOne & Slogan
             Text(
                 text = "CineOne",
                 color = CineRedPrimary,
-                fontSize = 36.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 1.sp
             )
