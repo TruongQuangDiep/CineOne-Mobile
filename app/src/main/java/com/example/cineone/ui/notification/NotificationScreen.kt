@@ -156,41 +156,31 @@ fun NotificationScreen(
             return
         }
 
-        // Segmented Filter: Tất cả | Quan trọng | Đã xem
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(CineSurfaceCard)
-                .border(1.dp, CineBorder, RoundedCornerShape(10.dp))
-                .padding(3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        SecondaryTabRow(
+            selectedTabIndex = uiState.selectedTab.ordinal,
+            containerColor = CineBackgroundDark,
+            contentColor = CineRedPrimary,
+            divider = { HorizontalDivider(color = CineDivider, thickness = 1.dp) }
         ) {
             NotificationTab.entries.forEach { tab ->
                 val selected = uiState.selectedTab == tab
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (selected) CineRedPrimary else Color.Transparent)
-                        .clickable { viewModel.selectTab(tab) }
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val label = if (tab == NotificationTab.ALL && uiState.unreadCount > 0) {
-                        "${tab.label} (${uiState.unreadCount})"
-                    } else {
-                        tab.label
-                    }
-                    Text(
-                        text = label,
-                        fontSize = 13.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (selected) Color.White else CineTextGray,
-                        maxLines = 1
-                    )
+                val label = if (tab == NotificationTab.ALL && uiState.unreadCount > 0) {
+                    "${tab.label} (${uiState.unreadCount})"
+                } else {
+                    tab.label
                 }
+                Tab(
+                    selected = selected,
+                    onClick = { viewModel.selectTab(tab) },
+                    text = {
+                        Text(
+                            text = label,
+                            fontSize = 14.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selected) CineRedPrimary else CineTextGray
+                        )
+                    }
+                )
             }
         }
 

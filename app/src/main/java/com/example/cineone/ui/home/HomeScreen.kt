@@ -217,7 +217,7 @@ fun HomeScreen(
                     isEmbeddedInHome = true,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
 
@@ -268,7 +268,7 @@ fun HomeScreen(
                     isEmbeddedInHome = true,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
 
@@ -485,7 +485,7 @@ private fun HomeTabContent(
                             text = tab.label,
                             fontSize = 14.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) CineTextWhite else CineTextGray
+                            color = if (isSelected) CineRedPrimary else CineTextGray
                         )
                     }
                 )
@@ -1162,13 +1162,17 @@ private fun QuickProfileTab(
                         text = userName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = CineTextWhite
+                        color = CineTextWhite,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = userEmail,
                         fontSize = 13.sp,
-                        color = CineTextGray
+                        color = CineTextGray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1180,7 +1184,7 @@ private fun QuickProfileTab(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-text = userTier,
+                            text = userTier,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD700)
@@ -1188,9 +1192,10 @@ text = userTier,
                     }
                 }
 
-                // Nút " Thông tin chi tiết\ (SCRUM-105)
- OutlinedButton(
- onClick = onProfileDetailClick,
+                Spacer(modifier = Modifier.width(12.dp))
+
+                OutlinedButton(
+                    onClick = onProfileDetailClick,
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, CineBorder),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
@@ -1512,6 +1517,7 @@ fun ProfileDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .background(CineBackgroundDark)
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -2322,7 +2328,7 @@ fun HomeLocationSetupScreen(
     Scaffold(
         containerColor = CineBackgroundDark,
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().background(CineBackgroundDark)) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().background(CineBackgroundDark)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3356,6 +3362,7 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .background(CineBackgroundDark)
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically

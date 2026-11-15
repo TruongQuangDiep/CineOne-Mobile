@@ -245,45 +245,32 @@ fun SupportListScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(CineSurfaceCard)
-                            .border(1.dp, CineBorder, RoundedCornerShape(8.dp))
+                    SecondaryTabRow(
+                        selectedTabIndex = SupportStatusTab.entries.indexOfFirst {
+                            it.code.equals(uiState.selectedStatusFilter, ignoreCase = true)
+                        }.coerceAtLeast(0),
+                        containerColor = CineBackgroundDark,
+                        contentColor = CineRedPrimary,
+                        divider = { HorizontalDivider(color = CineDivider, thickness = 1.dp) }
                     ) {
-                        SupportStatusTab.entries.forEachIndexed { index, tab ->
+                        SupportStatusTab.entries.forEach { tab ->
                             val isSelected = uiState.selectedStatusFilter.equals(tab.code, ignoreCase = true)
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .background(
-                                        if (isSelected) CineRedPrimary.copy(alpha = 0.22f)
-                                        else Color.Transparent
+                            Tab(
+                                selected = isSelected,
+                                onClick = {
+                                    showAllItems = false
+                                    viewModel.setStatusFilter(tab.code)
+                                },
+                                text = {
+                                    Text(
+                                        text = tab.label,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) CineRedPrimary else CineTextGray,
+                                        maxLines = 1
                                     )
-                                    .clickable {
-                                        showAllItems = false
-                                        viewModel.setStatusFilter(tab.code)
-                                    }
-                                    .padding(vertical = 9.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = tab.label,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) CineRedPrimary else CineTextWhite,
-                                    maxLines = 1
-                                )
-                            }
-                            if (index < SupportStatusTab.entries.lastIndex) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(1.dp)
-                                        .height(34.dp)
-                                        .background(CineBorder)
-                                )
-                            }
+                                }
+                            )
                         }
                     }
                 }
@@ -1368,45 +1355,28 @@ fun FaqScreen(
             )
 
             Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = CineDivider)
-            Spacer(modifier = Modifier.height(14.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(CineSurfaceCard)
-                    .border(1.dp, CineBorder, RoundedCornerShape(8.dp))
+            SecondaryTabRow(
+                selectedTabIndex = uiState.selectedFaqChip.ordinal,
+                containerColor = CineBackgroundDark,
+                contentColor = CineRedPrimary,
+                divider = { HorizontalDivider(color = CineDivider, thickness = 1.dp) }
             ) {
-                FaqFilterChip.entries.forEachIndexed { index, chip ->
+                FaqFilterChip.entries.forEach { chip ->
                     val isSelected = uiState.selectedFaqChip == chip
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(
-                                if (isSelected) CineRedPrimary.copy(alpha = 0.22f)
-                                else Color.Transparent
+                    Tab(
+                        selected = isSelected,
+                        onClick = { viewModel.onFaqChipSelected(chip) },
+                        text = {
+                            Text(
+                                text = chip.label,
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) CineRedPrimary else CineTextGray,
+                                maxLines = 1
                             )
-                            .clickable { viewModel.onFaqChipSelected(chip) }
-                            .padding(vertical = 9.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = chip.label,
-                            fontSize = 12.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) CineRedPrimary else CineTextWhite,
-                            maxLines = 1
-                        )
-                    }
-                    if (index < FaqFilterChip.entries.lastIndex) {
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(34.dp)
-                                .background(CineBorder)
-                        )
-                    }
+                        }
+                    )
                 }
             }
 
