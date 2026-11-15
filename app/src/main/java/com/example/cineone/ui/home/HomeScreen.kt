@@ -109,7 +109,7 @@ private enum class HomeBottomTab(
 ) {
     HOME("Trang chủ", Icons.Filled.Home, Icons.Outlined.Home),
     CINEMA("Chọn rạp", Icons.Filled.Theaters, Icons.Outlined.Theaters),
-    REVIEW("Đánh giá", Icons.Filled.StarOutline, Icons.Outlined.StarOutline),
+    REVIEW("Đánh giá", Icons.Filled.Star, Icons.Outlined.StarOutline),
     NOTIFICATION("Thông báo", Icons.Filled.Notifications, Icons.Outlined.Notifications),
     PROFILE("Tôi", Icons.Filled.Person, Icons.Outlined.Person)
 }
