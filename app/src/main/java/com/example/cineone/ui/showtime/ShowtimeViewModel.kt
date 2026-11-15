@@ -345,7 +345,7 @@ class ShowtimeViewModel(
                     if (b.isNotBlank()) b else st.cinemaName.trim().split(" ").firstOrNull()?.ifBlank { null }
                 }.distinct()
 
-                val cities = allCinemas.map { it.city.trim() }.filter { it.isNotBlank() }.distinct().sorted()
+                val cities = allCinemas.map { LocationUtils.formatStandardCityName(it.city) }.filter { it.isNotBlank() }.distinct().sorted()
                 val currentCity = _uiState.value.selectedCity
                 val resolvedCity = if (currentCity.isNotBlank()) {
                     val key = LocationUtils.normalizeCityKey(currentCity)

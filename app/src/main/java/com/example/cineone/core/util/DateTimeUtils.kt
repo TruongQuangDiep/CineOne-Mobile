@@ -215,15 +215,52 @@ object LocationUtils {
             .replace(Regex("\\s+"), " ")
             .trim()
         if (base.isBlank()) return ""
+        // Xóa mọi tiền tố: "tp", "t p", "thanh pho", "tinh", "t"
         val withoutPrefix = base
-            .replace(Regex("^(tp|thanh pho|tinh)\\s+"), "")
+            .replace(Regex("^(t\\s*p|thanh\\s*pho|tinh|t)\\s+"), "")
             .trim()
         return when (withoutPrefix) {
-            "hcm", "tphcm", "tp hcm", "sai gon", "saigon" -> "ho chi minh"
-            "hn", "hanoi" -> "ha noi"
-            "brvt", "vung tau", "ba ria" -> "ba ria vung tau"
-            "hue" -> "thua thien hue"
+            "hcm", "tphcm", "tp hcm", "sai gon", "saigon", "ho chi minh" -> "ho chi minh"
+            "hn", "hanoi", "ha noi" -> "ha noi"
+            "brvt", "vung tau", "ba ria", "ba ria vung tau" -> "ba ria vung tau"
+            "hue", "thua thien hue" -> "thua thien hue"
+            "danang", "da nang" -> "da nang"
+            "haiphong", "hai phong" -> "hai phong"
+            "cantho", "can tho" -> "can tho"
             else -> withoutPrefix
+        }
+    }
+
+    fun formatStandardCityName(rawCity: String?): String {
+        val key = normalizeCityKey(rawCity)
+        return when (key) {
+            "ho chi minh" -> "TP. Hồ Chí Minh"
+            "ha noi" -> "Hà Nội"
+            "da nang" -> "Đà Nẵng"
+            "hai phong" -> "Hải Phòng"
+            "can tho" -> "Cần Thơ"
+            "ba ria vung tau" -> "Bà Rịa - Vũng Tàu"
+            "thua thien hue" -> "Thừa Thiên Huế"
+            "binh duong" -> "Bình Dương"
+            "dong nai" -> "Đồng Nai"
+            "nghe an" -> "Nghệ An"
+            "tuyen quang" -> "Tuyên Quang"
+            "bac giang" -> "Bắc Giang"
+            "lam dong" -> "Lâm Đồng"
+            "khanh hoa" -> "Khánh Hòa"
+            "quang ninh" -> "Quảng Ninh"
+            "thanh hoa" -> "Thanh Hóa"
+            "dak lak" -> "Đắk Lắk"
+            "an giang" -> "An Giang"
+            "kien giang" -> "Kiên Giang"
+            else -> {
+                rawCity?.trim()
+                    ?.replace(Regex("^(?i)(t\\.p|tp\\.?|tỉnh|t\\.)\\s*"), "")
+                    ?.trim()
+                    ?.split(" ")
+                    ?.joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+                    .orEmpty()
+            }
         }
     }
 

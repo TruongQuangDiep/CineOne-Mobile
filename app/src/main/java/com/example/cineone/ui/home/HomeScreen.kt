@@ -208,6 +208,9 @@ fun HomeScreen(
                             Screen.MovieList.createRoute(uiState.selectedTab.statusCode)
                         )
                     },
+                    onSeeAllPromotionsClick = {                        // <-- THÊM ĐOẠN NÀY
+                        navController.navigate(Screen.VoucherList.route)
+                    },
                     onPromotionClick = { promo -> selectedPromo = promo },
                     onRetry = viewModel::loadHomeData
                 )
@@ -261,6 +264,9 @@ fun HomeScreen(
                     },
                     onTermsAndPoliciesClick = {
                         navController.navigate(Screen.Faq.route)
+                    },
+                    onLoginClick = {
+                        navController.navigate(Screen.Login.route)
                     },
                     onLogout = {
                         AppNotificationHelper.unsubscribeUserTopic(context)
@@ -393,6 +399,7 @@ private fun HomeTabContent(
     onMovieStatusTabSelected: (HomeMovieTab) -> Unit,
     onMovieClick: (Long) -> Unit,
     onSeeAllMoviesClick: () -> Unit,
+    onSeeAllPromotionsClick: () -> Unit = {},
     onPromotionClick: (HomePromotionItem) -> Unit,
     onRetry: () -> Unit
 ) {
@@ -590,9 +597,7 @@ private fun HomeTabContent(
         SectionHeaderRow(
             title = "Khuyến mãi nổi bật",
             actionLabel = if (uiState.promotions.isNotEmpty()) "Xem tất cả >" else "",
-            onActionClick = {
-                uiState.promotions.firstOrNull()?.let(onPromotionClick)
-            }
+            onActionClick = onSeeAllPromotionsClick
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -1092,6 +1097,7 @@ private fun QuickProfileTab(
     onSettingsClick: () -> Unit = {},
     onSupportClick: () -> Unit = {},
     onTermsAndPoliciesClick: () -> Unit = {},
+    onLoginClick: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1305,22 +1311,42 @@ private fun QuickProfileTab(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 3. Nút [ ĐĂNG XUẤT ] (HOẠT ĐỘNG - theo đúng wireframe ảnh 5)
-        OutlinedButton(
-            onClick = onLogout,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = CineTextWhite),
-            border = BorderStroke(1.dp, CineBorder),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) {
-            Text(
-                text = "ĐĂNG XUẤT",
-                color = CineTextWhite,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
+        // 3. Nút [ ĐĂNG XUẤT / ĐĂNG NHẬP ] tùy theo trạng thái đăng nhập
+        val isLoggedIn = sessionManager.isLoggedIn()
+        if (isLoggedIn) {
+            OutlinedButton(
+                onClick = onLogout,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = CineTextWhite),
+                border = BorderStroke(1.dp, CineBorder),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text(
+                    text = "ĐĂNG XUẤT",
+                    color = CineTextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            // Đang xem chế độ khách: Hiện nút "ĐĂNG NHẬP" màu đỏ nổi bật
+            Button(
+                onClick = onLoginClick,
+                colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text(
+                    text = "ĐĂNG NHẬP",
+                    color = CineTextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))

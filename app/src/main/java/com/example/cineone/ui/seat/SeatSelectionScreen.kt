@@ -32,6 +32,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.domain.model.Seat
 import com.example.cineone.navigation.Screen
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
 
@@ -48,6 +51,8 @@ fun SeatSelectionScreen(
     viewModel: SeatViewModel = viewModel(factory = SeatViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val horizontalScrollState = rememberScrollState()
+    val verticalScrollState = rememberScrollState()
     val context = LocalContext.current
     val basePrice = basePriceStr.toDoubleOrNull() ?: 85000.0
 
@@ -197,44 +202,49 @@ fun SeatSelectionScreen(
                         Text(text = "Rạp chưa cập nhật sơ đồ ghế", color = CineTextGray)
                     }
                     else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(verticalScrollState)
+                                .horizontalScroll(horizontalScrollState),
+                            contentAlignment = Alignment.Center
                         ) {
-                            items(uiState.seatsByRow.keys.sorted().toList()) { rowLetter ->
-                                val rowSeats = uiState.seatsByRow[rowLetter]?.sortedBy { it.seatNumber } ?: emptyList()
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    // Tên Hàng (A, B, C...)
-                                    Text(
-                                        text = rowLetter,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = CineTextGray,
-                                        modifier = Modifier.width(24.dp),
-                                        textAlign = TextAlign.Center
-                                    )
-
-                                    Spacer(modifier = Modifier.width(6.dp))
-
-                                    // Lưới các ghế trong hàng
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        userScrollEnabled = false
+                            Column(
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                uiState.seatsByRow.keys.sorted().forEach { rowLetter ->
+                                    val rowSeats = uiState.seatsByRow[rowLetter]?.sortedBy { it.seatNumber } ?: emptyList()
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
                                     ) {
-                                        items(rowSeats) { seat ->
-                                            SeatItemView(
-                                                seat = seat,
-                                                isSelected = uiState.selectedSeatIds.contains(seat.seatId),
-                                                isHeldByOther = uiState.heldByOtherSeatIds.contains(seat.seatId),
-                                                isBooked = uiState.bookedSeatIds.contains(seat.seatId),
-                                                onClick = { viewModel.onSeatClick(seat) }
-                                            )
+                                        // Tên Hàng (A, B, C...)
+                                        Text(
+                                            text = rowLetter,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = CineTextGray,
+                                            modifier = Modifier.width(24.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+
+                                        Spacer(modifier = Modifier.width(6.dp))
+
+                                        // Lưới các ghế trong hàng (cuộn đồng bộ toàn bộ ma trận ghế)
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            rowSeats.forEach { seat ->
+                                                SeatItemView(
+                                                    seat = seat,
+                                                    isSelected = uiState.selectedSeatIds.contains(seat.seatId),
+                                                    isHeldByOther = uiState.heldByOtherSeatIds.contains(seat.seatId),
+                                                    isBooked = uiState.bookedSeatIds.contains(seat.seatId),
+                                                    onClick = { viewModel.onSeatClick(seat) }
+                                                )
+                                            }
                                         }
                                     }
                                 }
