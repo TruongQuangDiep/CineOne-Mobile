@@ -61,6 +61,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import android.view.WindowManager
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -101,6 +104,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.Locale
+
 
 private enum class HomeBottomTab(
     val label: String,
@@ -151,6 +155,14 @@ fun HomeScreen(
         }
     }
     var selectedPromo by remember { mutableStateOf<HomePromotionItem?>(null) }
+
+    var hasDismissedPopupVoucher by rememberSaveable { mutableStateOf(false) }
+    val popupVoucher = remember(uiState.promotions, hasDismissedPopupVoucher) {
+        if (!hasDismissedPopupVoucher && uiState.promotions.isNotEmpty()) {
+            // Tự động tìm voucher đang có ảnh banner để làm popup chào đón
+            uiState.promotions.firstOrNull { !it.imageUrl.isNullOrBlank() }
+        } else null
+    }
 
     Scaffold(
         containerColor = CineBackgroundDark,
@@ -282,6 +294,19 @@ fun HomeScreen(
                 )
             }
         }
+    }
+
+    if (popupVoucher != null) {
+        VoucherPopupDialog(
+            promotion = popupVoucher,
+            onDismiss = { hasDismissedPopupVoucher = true },
+            onCopyCode = { code ->
+                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                cm?.setPrimaryClip(ClipData.newPlainText("voucher_code", code))
+                Toast.makeText(context, "Đã sao chép mã $code vào bộ nhớ tạm!", Toast.LENGTH_SHORT).show()
+                hasDismissedPopupVoucher = true
+            }
+        )
     }
 
     if (selectedPromo != null) {
@@ -3941,4 +3966,128 @@ fun TermsAndPoliciesScreen(
     navController: NavController
 ) {
     com.example.cineone.ui.support.FaqScreen(navController = navController)
+}
+
+// Hàm tải ảnh từ Cloudinary an toàn, bất đồng bộ
+@Composable
+private fun rememberNetworkImageBitmap(url: String?): ImageBitmap? {
+    if (url.isNullOrBlank()) return null
+    val cleanUrl = url.trim()
+    var bitmap by remember(cleanUrl) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(cleanUrl) {
+        withContext(Dispatchers.IO) {
+            try {
+                val conn = (java.net.URL(cleanUrl).openConnection() as java.net.HttpURLConnection).apply {
+                    connectTimeout = 6000
+                    readTimeout = 6000
+                    doInput = true
+                }
+                conn.inputStream.use { stream ->
+                    BitmapFactory.decodeStream(stream)?.asImageBitmap()?.let {
+                        bitmap = it
+                    }
+                }
+            } catch (_: Exception) {
+                bitmap = null
+            }
+        }
+    }
+    return bitmap
+}
+
+// Pop-up Banner Voucher dạng ảnh 16:9 tinh gọn
+@Composable
+private fun VoucherPopupDialog(
+    promotion: HomePromotionItem,
+    onDismiss: () -> Unit,
+    onCopyCode: (String) -> Unit
+) {
+    val bannerBitmap = rememberNetworkImageBitmap(promotion.imageUrl)
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect {
+            dialogWindow?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        }
+        // Nền mờ nhẹ 0.35f để nhìn thấy rõ toàn bộ màn hình phía sau
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.35f))
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            // Khung Banner tỉ lệ 16:9, thu nhỏ vừa vặn 85% màn hình
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .aspectRatio(9f / 16f)
+                    .clickable(enabled = false) {}
+            ) {
+                // 1. Ảnh Banner Voucher (chạm vào ảnh tự sao chép mã)
+                if (bannerBitmap != null) {
+                    Image(
+                        bitmap = bannerBitmap,
+                        contentDescription = promotion.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                            .clickable { onCopyCode(promotion.code) }
+                    )
+                } else {
+                    // Placeholder nếu ảnh đang tải
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(CineRedPrimary, Color(0xFF1E060A))
+                                )
+                            )
+                            .clickable { onCopyCode(promotion.code) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.ConfirmationNumber,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = promotion.badge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
+                    }
+                }
+
+                // 2. Nút X ở góc trên bên phải
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(30.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Đóng",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+    }
 }
