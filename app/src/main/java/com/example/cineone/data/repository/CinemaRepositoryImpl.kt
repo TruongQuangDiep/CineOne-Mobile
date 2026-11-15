@@ -39,7 +39,7 @@ class CinemaRepositoryImpl(private val cinemaApi: CinemaApi) : CinemaRepository 
             loadFromDiskCacheIfAvailable()
         }
 
-        if (isDefaultQuery && allCinemasMemoryCache.isNotEmpty()) {
+        if (isDefaultQuery && allCinemasMemoryCache.size >= 50) {
             val fromSlice = page * PAGE_SIZE
             if (fromSlice < allCinemasMemoryCache.size && (now - allCinemasTimestamp) < CACHE_TTL_MS) {
                 val slice = allCinemasMemoryCache.subList(

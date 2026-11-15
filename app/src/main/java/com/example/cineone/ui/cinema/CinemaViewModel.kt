@@ -104,10 +104,10 @@ class CinemaViewModel(
                 )
             }
 
-            val combined = _listUiState.value.allCinemas.toMutableList()
+            val combined = mutableListOf<Cinema>()
             var lastError: String? = null
             var page = 0
-            while (page < 10) {
+            while (page < 25) {
                 var pageItems: List<Cinema> = emptyList()
                 var hadError = false
                 getCinemasUseCase(q = null, city = null, status = "ACTIVE", page = page).collect { res ->
@@ -150,7 +150,7 @@ class CinemaViewModel(
     private fun applyCinemasToState(uniqueCinemas: List<Cinema>) {
         val brands = buildBrandList(uniqueCinemas)
         val cities = uniqueCinemas
-            .map { it.city.trim() }
+            .map { LocationUtils.formatStandardCityName(it.city) }
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()

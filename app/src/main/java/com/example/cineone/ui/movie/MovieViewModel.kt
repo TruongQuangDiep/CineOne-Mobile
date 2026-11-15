@@ -252,7 +252,7 @@ class MovieViewModel(
                 selectedDate = defaultDate,
                 selectedTimeSlot = targetSlot,
                 allCinemas = cachedCinemas,
-                availableCities = cachedCinemas.map { it.city.trim() }.filter { it.isNotBlank() }.distinct().sorted(),
+                availableCities = cachedCinemas.map { LocationUtils.formatStandardCityName(it.city) }.filter { it.isNotBlank() }.distinct().sorted(),
                 allMovies = cachedMovies,
                 availableGenres = (extractGenresFromMovies(cachedMovies) + initialGenreSet).distinct()
             )
@@ -400,7 +400,7 @@ class MovieViewModel(
 
     private fun updateCinemasInState(cinemas: List<Cinema>) {
         val cities = cinemas
-            .map { it.city.trim() }
+            .map { LocationUtils.formatStandardCityName(it.city) }
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
