@@ -34,7 +34,9 @@ data class HomePromotionItem(
     val title: String,
     val subtitle: String,
     val badge: String,
-    val validPeriod: String
+    val validPeriod: String,
+
+    val imageUrl: String? = null
 )
 
 data class HomeFeaturedReviewItem(
@@ -245,7 +247,8 @@ class HomeViewModel(
             title = v.title.ifBlank { "Mã ưu đãi ${v.code}" },
             subtitle = subtitleParts.joinToString(" • "),
             badge = badgeText,
-            validPeriod = validPeriod
+            validPeriod = validPeriod,
+            imageUrl = v.imageUrl
         )
     }
 
