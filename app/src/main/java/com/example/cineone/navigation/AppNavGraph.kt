@@ -2,6 +2,8 @@ package com.example.cineone.navigation
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
@@ -45,12 +47,13 @@ import com.example.cineone.ui.support.SupportFormScreen
 import com.example.cineone.ui.notification.NotificationScreen
 import com.example.cineone.ui.notification.NotificationDetailScreen
 import com.example.cineone.ui.support.FaqScreen
+import com.example.cineone.ui.splash.SplashScreen
 
 @Composable
 fun AppNavGraph(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route
+    startDestination: String = Screen.Splash.route
 ) {
     val navEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
     NavHost(
@@ -58,10 +61,14 @@ fun AppNavGraph(
         startDestination = startDestination,
         modifier = modifier,
         enterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(durationMillis = 280, easing = navEasing)
-            )
+            if (initialState.destination.route == Screen.Splash.route) {
+                fadeIn(animationSpec = tween(durationMillis = 380))
+            } else {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(durationMillis = 280, easing = navEasing)
+                )
+            }
         },
         exitTransition = {
             slideOutHorizontally(
@@ -82,6 +89,15 @@ fun AppNavGraph(
             )
         }
     ) {
+        composable(
+            route = Screen.Splash.route,
+            exitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 320))
+            }
+        ) {
+            SplashScreen(navController = navController)
+        }
+
         // 1. Màn hình Đăng nhập (Màn mặc định khi mở app)
         composable(Screen.Login.route) {
             LoginScreen(navController = navController)

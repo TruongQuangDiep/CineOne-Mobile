@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.CineOne" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.CineOne" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/cine_splash_green</item>
+        <item name="android:statusBarColor">@color/cine_splash_green</item>
+        <item name="android:navigationBarColor">@color/cine_splash_green</item>
+    </style>
 </resources>
