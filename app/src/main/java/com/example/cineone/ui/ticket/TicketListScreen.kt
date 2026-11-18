@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.domain.model.Ticket
 import com.example.cineone.navigation.Screen
+import com.example.cineone.ui.common.TicketListSkeleton
 import com.example.cineone.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +35,9 @@ fun TicketListScreen(
     val tabs = listOf("UPCOMING" to "Vé sắp tới", "HISTORY" to "Lịch sử vé")
 
     LaunchedEffect(Unit) {
-        viewModel.loadTickets()
+        if (uiState.tickets.isEmpty() && !uiState.isLoading) {
+            viewModel.loadTickets()
+        }
     }
 
     Scaffold(
@@ -91,7 +94,7 @@ fun TicketListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(color = CineRedPrimary)
+                    TicketListSkeleton(modifier = Modifier.align(Alignment.TopCenter))
                 } else if (uiState.tickets.isEmpty()) {
                     EmptyTicketView(isUpcoming = uiState.currentTab == "UPCOMING") {
                         navController.navigate(Screen.Home.route) {

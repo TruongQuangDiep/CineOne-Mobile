@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.data.dto.membership.TierDetailDto
+import com.example.cineone.ui.common.MembershipSkeleton
 import com.example.cineone.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,7 +57,7 @@ fun MembershipScreen(
             contentAlignment = Alignment.Center
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(color = CineRedPrimary)
+                MembershipSkeleton(modifier = Modifier.align(Alignment.TopCenter))
             } else if (member != null) {
                 Column(
                     modifier = Modifier

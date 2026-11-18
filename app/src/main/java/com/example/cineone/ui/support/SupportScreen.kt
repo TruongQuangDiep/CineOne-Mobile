@@ -50,7 +50,8 @@ import com.example.cineone.domain.model.Ticket
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.FaqListSkeleton
+import com.example.cineone.ui.common.SupportListSkeleton
 import com.example.cineone.ui.theme.*
 
 private enum class SupportStatusTab(val code: String, val label: String) {
@@ -277,7 +278,7 @@ fun SupportListScreen(
 
                 when {
                     uiState.isRequestsLoading && uiState.myRequests.isEmpty() -> {
-                        LoadingView(message = "Đang tải lịch sử yêu cầu...")
+                        SupportListSkeleton()
                     }
                     uiState.requestsError != null && uiState.myRequests.isEmpty() -> {
                         ErrorView(
@@ -1384,14 +1385,7 @@ fun FaqScreen(
 
             when {
                 uiState.isFaqLoading && uiState.faqItems.isEmpty() -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = CineRedPrimary)
-                    }
+                    FaqListSkeleton()
                 }
                 uiState.faqItems.isEmpty() -> {
                     EmptyView(

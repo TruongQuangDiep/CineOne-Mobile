@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,9 +46,11 @@ import com.example.cineone.core.util.TimeSlotFilter
 import com.example.cineone.domain.model.Movie
 import com.example.cineone.domain.model.Showtime
 import com.example.cineone.navigation.Screen
+import com.example.cineone.ui.common.CinemaListSkeleton
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.MovieGridSkeleton
+import com.example.cineone.ui.common.ShowtimeListSkeleton
 import com.example.cineone.ui.showtime.DateItem
 import com.example.cineone.ui.theme.*
 
@@ -92,17 +95,21 @@ fun MovieSearchScreen(
         }
     }
 
+    var hasInitialized by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(initialQuery, initialTab, initialLocationMode, initialCity, initialGenre, initialDate, initialTimeSlot) {
-        viewModel.initSearchScreen(
-            initialQuery = initialQuery,
-            initialTabCode = initialTab,
-            initialLocationCode = initialLocationMode,
-            initialCity = initialCity,
-            initialGenre = initialGenre,
-            initialDate = initialDate,
-            initialTimeSlot = initialTimeSlot,
-            context = context
-        )
+        if (!hasInitialized) {
+            hasInitialized = true
+            viewModel.initSearchScreen(
+                initialQuery = initialQuery,
+                initialTabCode = initialTab,
+                initialLocationCode = initialLocationMode,
+                initialCity = initialCity,
+                initialGenre = initialGenre,
+                initialDate = initialDate,
+                initialTimeSlot = initialTimeSlot,
+                context = context
+            )
+        }
     }
 
     Scaffold(
@@ -386,12 +393,14 @@ fun MovieSearchScreen(
             // 4. NỘI DUNG KẾT QUẢ THEO TỪNG TAB TIÊU CHÍ
             when {
                 uiState.isLoading && uiState.allMovies.isEmpty() && uiState.allCinemas.isEmpty() -> {
-                    LoadingView(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(260.dp),
-                        message = "Đang tải dữ liệu tìm kiếm..."
-                    )
+                    when (uiState.selectedTab) {
+                        SearchCategoryTab.MOVIE, SearchCategoryTab.GENRE -> {
+                            MovieGridSkeleton(rows = 2)
+                        }
+                        else -> {
+                            CinemaListSkeleton(itemCount = 4, includeHorizontalPadding = false)
+                        }
+                    }
                 }
 
                 uiState.errorMessage != null && uiState.allMovies.isEmpty() && uiState.allCinemas.isEmpty() -> {
@@ -996,12 +1005,7 @@ private fun ShowDateTabSection(
 
     when {
         isShowtimesLoading -> {
-            LoadingView(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                message = "Đang tải lịch chiếu theo ngày & khung giờ..."
-            )
+            ShowtimeListSkeleton(itemCount = 2)
         }
 
         dateMovieGroups.isEmpty() -> {

@@ -90,8 +90,14 @@ import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.auth.AuthViewModel
 import com.example.cineone.ui.cinema.CinemaListScreen
 import com.example.cineone.ui.review.ReviewScreen
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
+import com.example.cineone.ui.common.HomeCarouselSkeleton
+import com.example.cineone.ui.common.HomeFeaturedRowSkeleton
+import com.example.cineone.ui.common.HomePromotionRowSkeleton
+import com.example.cineone.ui.common.HomeReviewRowSkeleton
 import com.example.cineone.ui.common.LoadingView
 import com.example.cineone.ui.movie.MoviePosterBox
 import com.example.cineone.ui.movie.formatMovieRatingBadge
@@ -180,124 +186,130 @@ fun HomeScreen(
             )
         }
     ) { innerPadding ->
-        when (selectedBottomTab) {
-            HomeBottomTab.HOME -> {
-                HomeTabContent(
-                    uiState = uiState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    onSearchQueryChange = viewModel::onSearchQueryChanged,
-                    onSearchSubmit = {
-                        navController.navigate(
-                            Screen.MovieSearch.createRoute(query = uiState.searchQuery)
-                        )
-                    },
-                    onOpenSearchScreen = {
-                        navController.navigate(
-                            Screen.MovieSearch.createRoute(query = uiState.searchQuery)
-                        )
-                    },
-                    onAiAssistantClick = { navController.navigate(Screen.Assistant.route) },
-                    onMovieStatusTabSelected = viewModel::onTabSelected,
-                    onMovieClick = { movieId ->
-                        navController.navigate(Screen.MovieDetail.createRoute(movieId))
-                    },
-                    onSeeAllMoviesClick = {
-                        navController.navigate(
-                            Screen.MovieList.createRoute(uiState.selectedTab.statusCode)
-                        )
-                    },
-                    onSeeAllPromotionsClick = {                        // <-- THÊM ĐOẠN NÀY
-                        navController.navigate(Screen.VoucherList.route)
-                    },
-                    onPromotionClick = { promo -> selectedPromo = promo },
-                    onRetry = viewModel::loadHomeData
-                )
-            }
+        Crossfade(
+            targetState = selectedBottomTab,
+            animationSpec = tween(durationMillis = 220),
+            label = "home_bottom_tab_crossfade"
+        ) { currentTab ->
+            when (currentTab) {
+                HomeBottomTab.HOME -> {
+                    HomeTabContent(
+                        uiState = uiState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        onSearchQueryChange = viewModel::onSearchQueryChanged,
+                        onSearchSubmit = {
+                            navController.navigate(
+                                Screen.MovieSearch.createRoute(query = uiState.searchQuery)
+                            )
+                        },
+                        onOpenSearchScreen = {
+                            navController.navigate(
+                                Screen.MovieSearch.createRoute(query = uiState.searchQuery)
+                            )
+                        },
+                        onAiAssistantClick = { navController.navigate(Screen.Assistant.route) },
+                        onMovieStatusTabSelected = viewModel::onTabSelected,
+                        onMovieClick = { movieId ->
+                            navController.navigate(Screen.MovieDetail.createRoute(movieId))
+                        },
+                        onSeeAllMoviesClick = {
+                            navController.navigate(
+                                Screen.MovieList.createRoute(uiState.selectedTab.statusCode)
+                            )
+                        },
+                        onSeeAllPromotionsClick = {
+                            navController.navigate(Screen.VoucherList.route)
+                        },
+                        onPromotionClick = { promo -> selectedPromo = promo },
+                        onRetry = viewModel::loadHomeData
+                    )
+                }
 
-            HomeBottomTab.CINEMA -> {
-                CinemaListScreen(
-                    navController = navController,
-                    isEmbeddedInHome = true,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-            }
+                HomeBottomTab.CINEMA -> {
+                    CinemaListScreen(
+                        navController = navController,
+                        isEmbeddedInHome = true,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
+                }
 
-            HomeBottomTab.REVIEW -> {
-                ReviewScreen(
-                    navController = navController,
-                    isEmbeddedInHome = true,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
-                )
-            }
+                HomeBottomTab.REVIEW -> {
+                    ReviewScreen(
+                        navController = navController,
+                        isEmbeddedInHome = true,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = innerPadding.calculateBottomPadding())
+                    )
+                }
 
-            HomeBottomTab.PROFILE -> {
-                QuickProfileTab(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    onProfileDetailClick = {
-                        navController.navigate(Screen.ProfileDetail.route)
-                    },
-                    onMembershipClick = {
-                        navController.navigate(Screen.Membership.route)
-                    },
-                    onMyTicketsClick = {
-                        navController.navigate(Screen.TicketList.route)
-                    },
-                    onVouchersClick = {
-                        navController.navigate(Screen.VoucherList.route)
-                    },
-                    onMyReviewsClick = {
-                        navController.navigate(Screen.MyReviews.route)
-                    },
-                    onSettingsClick = {
-                        navController.navigate(Screen.Settings.route)
-                    },
-                    onSupportClick = {
-                        navController.navigate(Screen.SupportList.route)
-                    },
-                    onTermsAndPoliciesClick = {
-                        navController.navigate(Screen.Faq.route)
-                    },
-                    onLoginClick = {
-                        navController.navigate(Screen.Login.route)
-                    },
-                    onLogout = {
-                        AppNotificationHelper.unsubscribeUserTopic(context)
-                        runCatching {
-                            CineOneApp.instance.networkModule.sessionManager.clearSession()
+                HomeBottomTab.PROFILE -> {
+                    QuickProfileTab(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        onProfileDetailClick = {
+                            navController.navigate(Screen.ProfileDetail.route)
+                        },
+                        onMembershipClick = {
+                            navController.navigate(Screen.Membership.route)
+                        },
+                        onMyTicketsClick = {
+                            navController.navigate(Screen.TicketList.route)
+                        },
+                        onVouchersClick = {
+                            navController.navigate(Screen.VoucherList.route)
+                        },
+                        onMyReviewsClick = {
+                            navController.navigate(Screen.MyReviews.route)
+                        },
+                        onSettingsClick = {
+                            navController.navigate(Screen.Settings.route)
+                        },
+                        onSupportClick = {
+                            navController.navigate(Screen.SupportList.route)
+                        },
+                        onTermsAndPoliciesClick = {
+                            navController.navigate(Screen.Faq.route)
+                        },
+                        onLoginClick = {
+                            navController.navigate(Screen.Login.route)
+                        },
+                        onLogout = {
+                            AppNotificationHelper.unsubscribeUserTopic(context)
+                            runCatching {
+                                CineOneApp.instance.networkModule.sessionManager.clearSession()
+                            }
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
                         }
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Home.route) { inclusive = true }
-                        }
-                    }
-                )
-            }
+                    )
+                }
 
-            HomeBottomTab.NOTIFICATION -> {
-                NotificationScreen(
-                    navController = navController,
-                    isEmbeddedInHome = true,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
-                )
-            }
+                HomeBottomTab.NOTIFICATION -> {
+                    NotificationScreen(
+                        navController = navController,
+                        isEmbeddedInHome = true,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = innerPadding.calculateBottomPadding())
+                    )
+                }
 
-            else -> {
-                PlaceholderBottomTab(
-                    tab = selectedBottomTab,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    onBackToHome = { selectedBottomTabName = HomeBottomTab.HOME.name }
-                )
+                else -> {
+                    PlaceholderBottomTab(
+                        tab = currentTab,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        onBackToHome = { selectedBottomTabName = HomeBottomTab.HOME.name }
+                    )
+                }
             }
         }
     }
@@ -528,12 +540,9 @@ private fun HomeTabContent(
 
         // 3. CAROUSEL PHIM ĐANG CHỌN (Có số thứ tự 1, 2, 3... & Badge độ tuổi từ DB)
         when {
-            uiState.isLoading && carouselMovies.isEmpty() -> {
-                LoadingView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(290.dp),
-                    message = "Đang tải danh sách phim..."
+            uiState.isTabLoading || (uiState.isLoading && carouselMovies.isEmpty()) -> {
+                HomeCarouselSkeleton(
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
 
@@ -575,7 +584,9 @@ private fun HomeTabContent(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (featuredMovies.isNotEmpty()) {
+        if (uiState.isLoading && featuredMovies.isEmpty()) {
+            HomeFeaturedRowSkeleton()
+        } else if (featuredMovies.isNotEmpty()) {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -602,7 +613,9 @@ private fun HomeTabContent(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (uiState.promotions.isNotEmpty()) {
+        if (uiState.isLoading && uiState.promotions.isEmpty()) {
+            HomePromotionRowSkeleton()
+        } else if (uiState.promotions.isNotEmpty()) {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -634,7 +647,9 @@ private fun HomeTabContent(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (uiState.featuredReviews.isNotEmpty()) {
+        if (uiState.isLoading && uiState.featuredReviews.isEmpty()) {
+            HomeReviewRowSkeleton()
+        } else if (uiState.featuredReviews.isNotEmpty()) {
             FeaturedReviewsCarousel(
                 reviews = uiState.featuredReviews,
                 onReviewClick = { review ->
@@ -3994,13 +4009,19 @@ fun TermsAndPoliciesScreen(
     com.example.cineone.ui.support.FaqScreen(navController = navController)
 }
 
-// Hàm tải ảnh từ Cloudinary an toàn, bất đồng bộ
+private val networkBannerCache = object : android.util.LruCache<String, ImageBitmap>(24) {}
+
 @Composable
 private fun rememberNetworkImageBitmap(url: String?): ImageBitmap? {
     if (url.isNullOrBlank()) return null
     val cleanUrl = url.trim()
-    var bitmap by remember(cleanUrl) { mutableStateOf<ImageBitmap?>(null) }
+    var bitmap by remember(cleanUrl) { mutableStateOf(networkBannerCache.get(cleanUrl)) }
     LaunchedEffect(cleanUrl) {
+        val cached = networkBannerCache.get(cleanUrl)
+        if (cached != null) {
+            bitmap = cached
+            return@LaunchedEffect
+        }
         withContext(Dispatchers.IO) {
             try {
                 val conn = (java.net.URL(cleanUrl).openConnection() as java.net.HttpURLConnection).apply {
@@ -4010,6 +4031,7 @@ private fun rememberNetworkImageBitmap(url: String?): ImageBitmap? {
                 }
                 conn.inputStream.use { stream ->
                     BitmapFactory.decodeStream(stream)?.asImageBitmap()?.let {
+                        networkBannerCache.put(cleanUrl, it)
                         bitmap = it
                     }
                 }

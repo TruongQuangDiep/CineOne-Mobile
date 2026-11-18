@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,7 +32,7 @@ import com.example.cineone.domain.model.Movie
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.MovieGridSkeleton
 import com.example.cineone.ui.home.HomeMovieTab
 import com.example.cineone.ui.theme.*
 import java.util.Locale
@@ -47,8 +48,12 @@ fun MovieListScreen(
     val focusManager = LocalFocusManager.current
     val tabs = remember { HomeMovieTab.entries }
 
+    var hasInitialized by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(initialStatus) {
-        viewModel.loadMovies(query = "", status = initialStatus)
+        if (!hasInitialized) {
+            hasInitialized = true
+            viewModel.loadMovies(query = "", status = initialStatus)
+        }
     }
 
     val selectedTabIndex = remember(uiState.selectedStatus) {
@@ -171,7 +176,7 @@ fun MovieListScreen(
 
             when {
                 uiState.isLoading -> {
-                    LoadingView(modifier = Modifier.fillMaxSize())
+                    MovieGridSkeleton(modifier = Modifier.fillMaxSize())
                 }
 
                 uiState.errorMessage != null && uiState.movies.isEmpty() -> {

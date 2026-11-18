@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.domain.model.Voucher
 import com.example.cineone.navigation.Screen
+import com.example.cineone.ui.common.VoucherListSkeleton
 import com.example.cineone.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,7 +113,7 @@ fun VoucherScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(color = CineRedPrimary)
+                    VoucherListSkeleton(modifier = Modifier.align(Alignment.TopCenter))
                 } else if (uiState.vouchers.isEmpty()) {
                     Text(
                         text = "Không có voucher nào trong mục này",

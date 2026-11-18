@@ -38,7 +38,7 @@ import com.example.cineone.core.util.LocationUtils
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.CinemaListSkeleton
 import com.example.cineone.ui.movie.CinemaBrandBadgeBox
 import com.example.cineone.ui.theme.*
 
@@ -352,10 +352,7 @@ fun CinemaListScreen(
 
         when {
             uiState.isLoading && uiState.allCinemas.isEmpty() -> {
-                LoadingView(
-                    modifier = Modifier.fillMaxSize(),
-                    message = "Đang tải danh sách rạp..."
-                )
+                CinemaListSkeleton(modifier = Modifier.fillMaxSize())
             }
 
             uiState.errorMessage != null && uiState.allCinemas.isEmpty() -> {

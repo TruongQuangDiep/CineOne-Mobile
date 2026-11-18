@@ -32,7 +32,7 @@ import com.example.cineone.domain.model.Notification
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.NotificationListSkeleton
 import com.example.cineone.ui.theme.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -188,7 +188,7 @@ fun NotificationScreen(
 
         when {
             uiState.isLoading && uiState.notifications.isEmpty() -> {
-                LoadingView()
+                NotificationListSkeleton()
             }
 
             uiState.errorMessage != null && uiState.notifications.isEmpty() -> {

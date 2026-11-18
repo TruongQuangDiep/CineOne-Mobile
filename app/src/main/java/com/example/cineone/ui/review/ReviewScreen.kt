@@ -44,7 +44,8 @@ import com.example.cineone.domain.model.Review
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.ReviewCommentListSkeleton
+import com.example.cineone.ui.common.ReviewMovieListSkeleton
 import com.example.cineone.ui.movie.MoviePosterBox
 import com.example.cineone.ui.theme.*
 import java.util.Locale
@@ -393,7 +394,7 @@ private fun CommunityReviewsTab(
 
         when {
             isLoading && movies.isEmpty() -> {
-                LoadingView(message = "Đang tải danh sách phim & đánh giá...")
+                ReviewMovieListSkeleton()
             }
             errorMessage != null && movies.isEmpty() -> {
                 ErrorView(message = errorMessage, onRetry = onRetry)
@@ -791,14 +792,7 @@ private fun MovieReviewsDetailDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 if (isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = CineRedPrimary, modifier = Modifier.size(32.dp))
-                    }
+                    ReviewCommentListSkeleton(itemCount = 3)
                 } else if (reviews.isEmpty()) {
                     Box(
                         modifier = Modifier
@@ -968,7 +962,10 @@ private fun MyReviewsTab(
 
     when {
         isLoading && reviews.isEmpty() -> {
-            LoadingView(message = "Đang tải các đánh giá của bạn...")
+            ReviewCommentListSkeleton(
+                itemCount = 4,
+                modifier = Modifier.padding(16.dp)
+            )
         }
         errorMessage != null && reviews.isEmpty() -> {
             ErrorView(message = errorMessage, onRetry = onRetry)

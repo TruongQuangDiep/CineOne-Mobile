@@ -1,5 +1,9 @@
 package com.example.cineone.navigation
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -48,10 +52,35 @@ fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Login.route
 ) {
+    val navEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth },
+                animationSpec = tween(durationMillis = 280, easing = navEasing)
+            )
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> -fullWidth / 4 },
+                animationSpec = tween(durationMillis = 280, easing = navEasing)
+            )
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> -fullWidth / 4 },
+                animationSpec = tween(durationMillis = 280, easing = navEasing)
+            )
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> fullWidth },
+                animationSpec = tween(durationMillis = 280, easing = navEasing)
+            )
+        }
     ) {
         // 1. Màn hình Đăng nhập (Màn mặc định khi mở app)
         composable(Screen.Login.route) {

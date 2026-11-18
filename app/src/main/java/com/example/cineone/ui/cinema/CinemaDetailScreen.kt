@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +29,7 @@ import com.example.cineone.core.util.TimeSlotFilter
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.EmptyView
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.ShowtimeListSkeleton
 import com.example.cineone.ui.movie.MoviePosterBox
 import com.example.cineone.ui.movie.normalizeAgeBadge
 import com.example.cineone.ui.theme.*
@@ -50,12 +51,16 @@ fun CinemaDetailScreen(
         movieListState.scrollToItem(0)
     }
 
+    var hasInitialized by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(cinemaId, initialDate, initialTimeSlot) {
-        viewModel.initCinemaDetail(
-            cinemaId = cinemaId,
-            initialDate = initialDate,
-            initialTimeSlotCode = initialTimeSlot
-        )
+        if (!hasInitialized) {
+            hasInitialized = true
+            viewModel.initCinemaDetail(
+                cinemaId = cinemaId,
+                initialDate = initialDate,
+                initialTimeSlotCode = initialTimeSlot
+            )
+        }
     }
 
     val displayCinemaName = uiState.cinema?.name?.ifBlank { null }
@@ -212,10 +217,7 @@ fun CinemaDetailScreen(
 
             when {
                 uiState.isLoading -> {
-                    LoadingView(
-                        modifier = Modifier.fillMaxSize(),
-                        message = "Đang tải lịch chiếu tại rạp..."
-                    )
+                    ShowtimeListSkeleton(modifier = Modifier.fillMaxSize())
                 }
 
                 uiState.errorMessage != null && uiState.movieShowtimes.isEmpty() -> {

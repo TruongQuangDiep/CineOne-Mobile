@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Theaters
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import com.example.cineone.core.util.LocationUtils
 import com.example.cineone.core.util.TimeSlotFilter
 import com.example.cineone.domain.model.Showtime
 import com.example.cineone.navigation.Screen
+import com.example.cineone.ui.common.ShowtimeListSkeleton
 import com.example.cineone.ui.movie.CinemaBrandBadgeBox
 import com.example.cineone.ui.theme.*
 import java.time.LocalDateTime
@@ -84,16 +86,20 @@ fun ShowtimeScreen(
         }
     }
 
+    var hasInitialized by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(movieId, initialDate, initialTimeSlot, initialLocationMode, initialCity, initialBrand) {
-        viewModel.initWithPreservedCriteria(
-            movieId = movieId,
-            initialDate = initialDate,
-            initialTimeSlot = initialTimeSlot,
-            initialLocationMode = initialLocationMode,
-            initialCity = initialCity,
-            initialBrand = initialBrand,
-            context = context
-        )
+        if (!hasInitialized) {
+            hasInitialized = true
+            viewModel.initWithPreservedCriteria(
+                movieId = movieId,
+                initialDate = initialDate,
+                initialTimeSlot = initialTimeSlot,
+                initialLocationMode = initialLocationMode,
+                initialCity = initialCity,
+                initialBrand = initialBrand,
+                context = context
+            )
+        }
     }
 
     val locationButtonLabel = when (uiState.locationMode) {
@@ -410,9 +416,8 @@ fun ShowtimeScreen(
             ) {
                 when {
                     uiState.isLoading -> {
-                        CircularProgressIndicator(
-                            color = CineRedPrimary,
-                            modifier = Modifier.align(Alignment.Center)
+                        ShowtimeListSkeleton(
+                            modifier = Modifier.align(Alignment.TopCenter)
                         )
                     }
 
