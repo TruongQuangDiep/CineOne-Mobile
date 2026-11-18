@@ -1,5 +1,6 @@
 package com.example.cineone.ui.seat
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,6 +28,7 @@ data class SeatUiState(
     val bookedSeatIds: Set<Long> = emptySet(),       // Ghế đã thanh toán xong
     val basePrice: Double = 85000.0,
     val totalPrice: Double = 0.0,
+    val remainingSeconds: Int = 600,
     val errorMessage: String? = null
 )
 
@@ -41,6 +43,7 @@ class SeatViewModel(
 
     private var heldSeatsListener: ListenerRegistration? = null
     private var currentShowtimeId: Long = 0L
+    private var countdownJob: kotlinx.coroutines.Job? = null
 
     // 1. Tải sơ đồ ghế tĩnh từ API Spring Boot
     fun loadSeats(showtimeId: Long, basePrice: Double = 85000.0) {
@@ -93,14 +96,25 @@ class SeatViewModel(
                     val othersHeld = mutableSetOf<Long>()
                     val booked = mutableSetOf<Long>()
 
+                    // Lấy userId của tài khoản đang đăng nhập hiện tại từ SharedPreferences
+                    val context = CineOneApp.instance
+                    val myUserId = context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+                        .getLong("user_id", 0L)
+
+                    val myHeldFromFirestore = mutableSetOf<Long>()
+
                     for (doc in snapshot.documents) {
                         val seatId = doc.getLong("seatId") ?: continue
                         val status = doc.getString("status") ?: ""
+                        val holdingUserId = doc.getLong("userId") ?: 0L
 
                         when (status.uppercase()) {
                             "HOLDING" -> {
-                                // Nếu không nằm trong danh sách ghế do chính tôi chọn -> là người khác đang giữ
-                                if (!uiState.value.selectedSeatIds.contains(seatId)) {
+                                if (holdingUserId > 0L && holdingUserId == myUserId) {
+                                    // Ghế này do CHÍNH BẠN đang giữ trên Firestore
+                                    myHeldFromFirestore.add(seatId)
+                                } else {
+                                    // Ghế này do NGƯỜI KHÁC giữ -> khóa lại
                                     othersHeld.add(seatId)
                                 }
                             }
@@ -108,7 +122,33 @@ class SeatViewModel(
                         }
                     }
 
+                    // Danh sách ghế của bạn: ưu tiên ghế đang giữ hợp lệ trên Firestore
+                    val finalSelectedSeats = if (myHeldFromFirestore.isNotEmpty()) {
+                        myHeldFromFirestore
+                    } else {
+                        // Nếu Firestore không có (hoặc vừa bị xóa do hết hạn), loại bỏ ghế đã hết hạn
+                        uiState.value.selectedSeatIds.filter { !othersHeld.contains(it) && !booked.contains(it) }.toSet()
+                    }
+
+                    // Tự động tính lại tổng tiền cho các ghế được phục hồi
+                    var calculatedTotal = 0.0
+                    val allSeats = _uiState.value.seatsByRow.values.flatten()
+                    finalSelectedSeats.forEach { id ->
+                        val s = allSeats.find { it.seatId == id }
+                        val price = if (s?.seatType == "VIP") _uiState.value.basePrice + 20000.0 else _uiState.value.basePrice
+                        calculatedTotal += price
+                    }
+
+                    // Bật lại đồng hồ đếm ngược nếu có ghế đang giữ mà đồng hồ chưa chạy
+                    if (finalSelectedSeats.isNotEmpty() && countdownJob?.isActive != true) {
+                        startCountdown()
+                    } else if (finalSelectedSeats.isEmpty()) {
+                        countdownJob?.cancel()
+                    }
+
                     _uiState.value = _uiState.value.copy(
+                        selectedSeatIds = finalSelectedSeats,
+                        totalPrice = if (calculatedTotal > 0) calculatedTotal else _uiState.value.totalPrice,
                         heldByOtherSeatIds = othersHeld,
                         bookedSeatIds = booked
                     )
@@ -131,6 +171,9 @@ class SeatViewModel(
         if (currentSelected.contains(seatId)) {
             // BỎ CHỌN: Gọi API releaseSeats
             currentSelected.remove(seatId)
+            if (currentSelected.isEmpty()) {
+                countdownJob?.cancel()
+            }
             viewModelScope.launch {
                 releaseSeatsUseCase(currentShowtimeId, listOf(seatId)).collect { }
             }
@@ -141,12 +184,18 @@ class SeatViewModel(
                 return
             }
             currentSelected.add(seatId)
+            if (countdownJob?.isActive != true) {
+                startCountdown()
+            }
             // GỌI API Spring Boot để kiểm tra & ghi nhận giữ ghế vào Firestore
             viewModelScope.launch {
                 holdSeatsUseCase(currentShowtimeId, listOf(seatId)).collect { resource ->
                     if (resource is Resource.Error) {
                         // Nếu server báo xung đột (bị người khác vừa giữ trước), tự gỡ khỏi danh sách
                         currentSelected.remove(seatId)
+                        if (currentSelected.isEmpty()) {
+                            countdownJob?.cancel()
+                        }
                         _uiState.value = _uiState.value.copy(
                             selectedSeatIds = currentSelected,
                             errorMessage = resource.message ?: "Ghế vừa bị người khác chọn"
@@ -172,10 +221,45 @@ class SeatViewModel(
         )
     }
 
+    // Bắt đầu đếm ngược 10 phút khi có ghế được giữ
+    private fun startCountdown() {
+        countdownJob?.cancel()
+        _uiState.value = _uiState.value.copy(remainingSeconds = 600)
+        countdownJob = viewModelScope.launch {
+            while (_uiState.value.remainingSeconds > 0) {
+                kotlinx.coroutines.delay(1000L)
+                _uiState.value = _uiState.value.copy(
+                    remainingSeconds = _uiState.value.remainingSeconds - 1
+                )
+            }
+            // Hết 10 phút tự động gỡ chọn
+            releaseAllSelectedSeats()
+        }
+    }
+
+    // Nhả toàn bộ ghế đang giữ khi người dùng bấm "Rời khỏi"
+    fun releaseAllSelectedSeats(onComplete: () -> Unit = {}) {
+        countdownJob?.cancel()
+        val currentSelected = _uiState.value.selectedSeatIds.toList()
+        if (currentSelected.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(selectedSeatIds = emptySet(), totalPrice = 0.0)
+            viewModelScope.launch {
+                try {
+                    releaseSeatsUseCase(currentShowtimeId, currentSelected).collect { }
+                } finally {
+                    onComplete()
+                }
+            }
+        } else {
+            onComplete()
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         // Hủy lắng nghe realtime khi thoát màn hình để không ngốn pin và mạng
         heldSeatsListener?.remove()
+        countdownJob?.cancel()
     }
 
     companion object {

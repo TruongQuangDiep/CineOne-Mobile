@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
+import androidx.activity.compose.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +52,15 @@ fun SeatSelectionScreen(
     viewModel: SeatViewModel = viewModel(factory = SeatViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showExitConfirmDialog by remember { mutableStateOf(false) }
+    // Xử lý nút Back vật lý / cử chỉ vuốt của Android
+    BackHandler(enabled = true) {
+        if (uiState.selectedSeatIds.isNotEmpty()) {
+            showExitConfirmDialog = true
+        } else {
+            navController.popBackStack()
+        }
+    }
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     val context = LocalContext.current
@@ -83,7 +93,13 @@ fun SeatSelectionScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (uiState.selectedSeatIds.isNotEmpty()) {
+                            showExitConfirmDialog = true
+                        } else {
+                            navController.popBackStack()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
@@ -257,6 +273,46 @@ fun SeatSelectionScreen(
             // 3. CHÚ THÍCH MÀU GHẾ (Legend)
             SeatLegendBar()
         }
+    }
+
+    if (showExitConfirmDialog) {
+        val minutes = uiState.remainingSeconds / 60
+        val seconds = uiState.remainingSeconds % 60
+        val timeFormatted = String.format("%02d:%02d", minutes, seconds)
+        AlertDialog(
+            onDismissRequest = { showExitConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Hủy quá trình giữ ghế?",
+                    fontWeight = FontWeight.Bold,
+                    color = CineTextWhite
+                )
+            },
+            text = {
+                Text(
+                    text = "Bạn đang trong quá trình giữ ghế đã chọn ($timeFormatted). Nếu thoát thì sẽ mất quá trình đặt ghế và ghế sẽ được nhả cho người khác.",
+                    color = CineTextGray
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitConfirmDialog = false
+                        viewModel.releaseAllSelectedSeats {
+                            navController.popBackStack()
+                        }
+                    }
+                ) {
+                    Text("Rời khỏi", color = CineRedPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirmDialog = false }) {
+                    Text("Ở lại", color = CineTextWhite)
+                }
+            },
+            containerColor = CineSurfaceCard
+        )
     }
 }
 
