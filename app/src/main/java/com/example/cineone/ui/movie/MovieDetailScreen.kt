@@ -47,7 +47,8 @@ import com.example.cineone.core.util.DateTimeUtils
 import com.example.cineone.domain.model.Movie
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.MovieDetailSkeleton
+import com.example.cineone.ui.common.ShimmerBox
 import com.example.cineone.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -69,7 +70,7 @@ fun MovieDetailScreen(
     var showTrailerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(movieId) {
-        if (movieId > 0L) {
+        if (movieId > 0L && uiState.movie?.movieId != movieId) {
             viewModel.loadMovieDetail(movieId)
         }
     }
@@ -149,11 +150,10 @@ fun MovieDetailScreen(
     ) { innerPadding ->
         when {
             uiState.isLoading -> {
-                LoadingView(
+                MovieDetailSkeleton(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
-                    message = "Đang tải thông tin phim..."
+                        .padding(innerPadding)
                 )
             }
 
@@ -647,12 +647,18 @@ fun MoviePosterBox(
     rankBadge: Int? = null
 ) {
     val cleanUrl = posterUrl.trim()
+    val isRemoteUrl = cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")
+    var isFetchingPoster by remember(cleanUrl) {
+        mutableStateOf(isRemoteUrl && posterBitmapCache.get(cleanUrl) == null)
+    }
     val imageBitmap by produceState<ImageBitmap?>(initialValue = posterBitmapCache.get(cleanUrl), key1 = cleanUrl) {
-        if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+        if (isRemoteUrl) {
             val cached = posterBitmapCache.get(cleanUrl)
             if (cached != null) {
                 value = cached
+                isFetchingPoster = false
             } else {
+                isFetchingPoster = true
                 val loaded = withContext(Dispatchers.IO) {
                     try {
                         val connection = (URL(cleanUrl).openConnection() as HttpURLConnection).apply {
@@ -671,7 +677,10 @@ fun MoviePosterBox(
                     posterBitmapCache.put(cleanUrl, loaded)
                     value = loaded
                 }
+                isFetchingPoster = false
             }
+        } else {
+            isFetchingPoster = false
         }
     }
 
@@ -692,6 +701,11 @@ fun MoviePosterBox(
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
+            )
+        } else if (isFetchingPoster) {
+            ShimmerBox(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(0.dp)
             )
         } else {
             Column(

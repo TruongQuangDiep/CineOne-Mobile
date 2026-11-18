@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.domain.model.Fnb
+import com.example.cineone.ui.common.FoodListSkeleton
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
 import com.example.cineone.navigation.Screen
@@ -48,7 +49,9 @@ fun FoodSelectionScreen(
     val seatPrice = seatPriceStr.toDoubleOrNull() ?: 0.0
 
     LaunchedEffect(cinemaId) {
-        viewModel.loadCinemaFnbs(cinemaId = cinemaId, seatPrice = seatPrice)
+        if (uiState.fnbs.isEmpty()) {
+            viewModel.loadCinemaFnbs(cinemaId = cinemaId, seatPrice = seatPrice)
+        }
     }
 
     val currencyFormatter = remember { DecimalFormat("#,### đ") }
@@ -164,9 +167,8 @@ fun FoodSelectionScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        color = CineRedPrimary,
-                        modifier = Modifier.align(Alignment.Center)
+                    FoodListSkeleton(
+                        modifier = Modifier.align(Alignment.TopCenter)
                     )
                 }
                 uiState.errorMessage != null && uiState.fnbs.isEmpty() -> {

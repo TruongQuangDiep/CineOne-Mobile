@@ -22,7 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.common.ErrorView
-import com.example.cineone.ui.common.LoadingView
+import com.example.cineone.ui.common.NotificationDetailSkeleton
 import com.example.cineone.ui.theme.*
 
 @Composable
@@ -72,7 +72,7 @@ fun NotificationDetailScreen(
         ) {
             when {
                 uiState.isDetailLoading -> {
-                    LoadingView()
+                    NotificationDetailSkeleton(modifier = Modifier.align(Alignment.TopCenter))
                 }
 
                 uiState.detailError != null -> {

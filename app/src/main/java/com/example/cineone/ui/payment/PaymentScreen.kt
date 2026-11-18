@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cineone.navigation.Screen
+import com.example.cineone.ui.common.QrCodeSkeleton
 import com.example.cineone.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -147,9 +148,7 @@ fun PaymentScreen(
                     Spacer(Modifier.height(12.dp))
 
                     if (uiState.isLoading) {
-                        Box(modifier = Modifier.size(220.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = CineRedPrimary)
-                        }
+                        QrCodeSkeleton(modifier = Modifier.size(220.dp))
                     } else {
                         // Render ảnh QR từ qrCode string
                         val qrData = uiState.qrCode.ifBlank { uiState.checkoutUrl }
@@ -271,8 +270,6 @@ fun QrCodeImage(qrData: String, modifier: Modifier = Modifier) {
     if (imageBitmap != null) {
         Image(bitmap = imageBitmap!!, contentDescription = "VietQR Code", modifier = modifier)
     } else if (isLoading) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = CineRedPrimary)
-        }
+        QrCodeSkeleton(modifier = modifier)
     }
 }

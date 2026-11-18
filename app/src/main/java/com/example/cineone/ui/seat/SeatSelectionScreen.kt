@@ -35,6 +35,7 @@ import com.example.cineone.navigation.Screen
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import com.example.cineone.ui.common.SeatMapSkeleton
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
 import androidx.activity.compose.BackHandler
@@ -208,8 +209,8 @@ fun SeatSelectionScreen(
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(color = CineRedPrimary)
+                    uiState.isLoading && uiState.seatsByRow.isEmpty() -> {
+                        SeatMapSkeleton()
                     }
                     uiState.errorMessage != null && uiState.seatsByRow.isEmpty() -> {
                         Text(text = uiState.errorMessage ?: "Lỗi tải sơ đồ ghế", color = CineError)

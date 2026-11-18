@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.cineone.ui.common.QrCodeSkeleton
+import com.example.cineone.ui.common.TicketDetailSkeleton
 import com.example.cineone.ui.payment.CinemaBarcode
 import com.example.cineone.ui.payment.TicketInfoRow
 import com.example.cineone.ui.theme.*
@@ -83,7 +85,7 @@ fun TicketDetailScreen(
             contentAlignment = Alignment.Center
         ) {
             if (uiState.isLoading || ticket == null) {
-                CircularProgressIndicator(color = CineRedPrimary)
+                TicketDetailSkeleton(modifier = Modifier.align(Alignment.TopCenter))
             } else {
                 Column(
                     modifier = Modifier
@@ -346,6 +348,6 @@ fun TicketQrImage(qrData: String, modifier: Modifier = Modifier) {
     if (imageBitmap != null) {
         Image(bitmap = imageBitmap!!, contentDescription = "Ticket QR Code", modifier = modifier)
     } else if (isLoading) {
-        CircularProgressIndicator(color = CineRedPrimary, modifier = Modifier.size(36.dp))
+        QrCodeSkeleton(modifier = modifier)
     }
 }
