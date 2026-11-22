@@ -14,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cineone.core.common.Resource
 import com.example.cineone.core.notification.AppNotificationHelper
@@ -39,9 +40,7 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val sessionManager = remember { CineOneApp.instance.networkModule.sessionManager }
             val notificationRepo = remember { CineOneApp.instance.repositoryModule.notificationRepository }
-            val startDestination = remember {
-                if (sessionManager.isLoggedIn()) Screen.Home.route else Screen.Login.route
-            }
+            val startDestination = Screen.Splash.route
 
             // Xin quyền Push Notification cho Android 13+
             val permissionLauncher = rememberLauncherForActivityResult(
@@ -61,9 +60,16 @@ class MainActivity : ComponentActivity() {
             }
 
             // Điều hướng thẳng vào trang chi tiết nếu người dùng bấm từ Push Notification
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
             val targetNotifId by pendingNotificationId
-            LaunchedEffect(targetNotifId) {
-                if (targetNotifId > 0L && sessionManager.isLoggedIn()) {
+            LaunchedEffect(targetNotifId, currentRoute) {
+                if (
+                    targetNotifId > 0L &&
+                    currentRoute != null &&
+                    currentRoute != Screen.Splash.route &&
+                    sessionManager.isLoggedIn()
+                ) {
                     navController.navigate(Screen.NotificationDetail.createRoute(targetNotifId))
                     pendingNotificationId.longValue = -1L
                 }
