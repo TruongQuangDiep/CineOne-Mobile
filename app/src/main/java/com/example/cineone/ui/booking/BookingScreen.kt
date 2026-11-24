@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocalActivity
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.*
@@ -27,6 +29,7 @@ import androidx.navigation.NavController
 import com.example.cineone.navigation.Screen
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
+import androidx.compose.material.icons.filled.CheckCircle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -208,7 +211,8 @@ fun BookingScreen(
                         }
                         Spacer(Modifier.height(12.dp))
 
-                        // Nhập mã voucher trực tiếp
+                        val isVoucherApplied = uiState.discountAmount > 0
+                        // 1. Hàng nhập mã Voucher & Nút áp dụng
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -218,9 +222,11 @@ fun BookingScreen(
                                 onValueChange = { viewModel.onVoucherCodeChanged(it) },
                                 placeholder = { Text("Nhập mã voucher...", color = CineTextMuted, fontSize = 14.sp) },
                                 singleLine = true,
+                                readOnly = isVoucherApplied, // Khóa ô nhập khi đã áp mã thành công
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CineRedPrimary,
-                                    unfocusedBorderColor = CineBorder,
+                                    // Khi đã áp mã thành công: viền xanh lá nhẹ, không bị đỏ rực
+                                    focusedBorderColor = if (isVoucherApplied) CineSuccess else CineRedPrimary,
+                                    unfocusedBorderColor = if (isVoucherApplied) CineSuccess.copy(alpha = 0.6f) else CineBorder,
                                     focusedTextColor = CineTextWhite,
                                     unfocusedTextColor = CineTextWhite,
                                     focusedContainerColor = CineInputBackground,
@@ -232,14 +238,17 @@ fun BookingScreen(
                             Spacer(Modifier.width(8.dp))
                             Button(
                                 onClick = { viewModel.applyVoucher(uiState.voucherCodeInput) },
-                                colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
+                                enabled = !isVoucherApplied && uiState.voucherCodeInput.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CineRedPrimary,
+                                    disabledContainerColor = CineBorderMuted
+                                ),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text("Áp dụng", fontSize = 13.sp)
                             }
                         }
-
-                        // Hoặc chọn từ ví voucher
+                        // 2. Nút chọn từ kho Voucher
                         Spacer(Modifier.height(10.dp))
                         OutlinedButton(
                             onClick = { showVoucherBottomSheet = true },
@@ -252,28 +261,60 @@ fun BookingScreen(
                             Spacer(Modifier.width(6.dp))
                             Text("Chọn từ kho Voucher của bạn", fontSize = 13.sp)
                         }
-
-                        // Hiển thị trạng thái Voucher đã chọn
-                        if (uiState.discountAmount > 0) {
+                        // 3. THÔNG BÁO LỖI (Inline Alert màu đỏ - Chuẩn theo mockup Ảnh 3)
+                        if (uiState.discountAmount == 0L && !uiState.voucherMessage.isNullOrBlank()) {
                             Spacer(Modifier.height(10.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(CineSuccess.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                                    .border(1.dp, CineSuccess, RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                    .background(Color(0xFF331111), RoundedCornerShape(8.dp))
+                                    .border(1.dp, CineRedPrimary, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Icon(Icons.Default.Info, contentDescription = null, tint = CineRedPrimary, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = uiState.voucherMessage ?: "Đã giảm: -${currencyFormatter.format(uiState.discountAmount)}",
-                                    color = CineSuccess,
+                                    text = uiState.voucherMessage ?: "",
+                                    color = CineRedPrimary,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 13.sp
                                 )
+                            }
+                        }
+                        // 4. THÔNG BÁO THÀNH CÔNG (Inline Alert màu xanh - Chuẩn theo mockup Ảnh 3)
+                        if (isVoucherApplied) {
+                            Spacer(Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(CineSuccess.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                                    .border(1.dp, CineSuccess.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = CineSuccess,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = uiState.voucherMessage ?: "Đã giảm ${currencyFormatter.format(uiState.discountAmount)}",
+                                        color = CineSuccess,
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    )
+                                }
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "Hủy",
+                                    contentDescription = "Gỡ voucher",
                                     tint = CineTextGray,
                                     modifier = Modifier
                                         .size(18.dp)
@@ -395,6 +436,14 @@ fun BookingScreen(
                                     Column(Modifier.weight(1f)) {
                                         Text(voucher.code, color = CineRedPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                         Text(voucher.title ?: "Ưu đãi đặt vé", color = CineTextWhite, fontSize = 13.sp)
+                                        if (voucher.applicableTierNames.isNotEmpty()) {
+                                            Text(
+                                                text = "Dành riêng cho: ${voucher.applicableTierNames.joinToString(", ")}",
+                                                color = Color(0xFFFFB300),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
                                     Button(
                                         onClick = {

@@ -15,7 +15,7 @@ class TicketRepositoryImpl(private val ticketApi: TicketApi) : TicketRepository 
         emit(Resource.Loading)
         try {
             val response = ticketApi.getMyTickets(tab)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data.map { it.toDomain() }))
             } else {
                 emit(Resource.Error(response.message ?: "Không lấy được danh sách vé"))
@@ -29,7 +29,7 @@ class TicketRepositoryImpl(private val ticketApi: TicketApi) : TicketRepository 
         emit(Resource.Loading)
         try {
             val response = ticketApi.getTicketDetail(ticketId)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data.toDomain()))
             } else {
                 emit(Resource.Error(response.message ?: "Không tìm thấy chi tiết vé"))

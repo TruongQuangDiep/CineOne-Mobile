@@ -111,18 +111,23 @@ class BookingViewModel(
                     is Resource.Success -> {
                         val discount = res.data ?: 0L
                         val matched = _uiState.value.availableVouchers.find { it.code.equals(code, true) }
+                        val appliedCode = matched?.code ?: code.trim().uppercase()
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
+                            voucherCodeInput = appliedCode, // <-- 1. Tự động điền mã voucher vào ô nhập
                             selectedVoucher = matched,
                             discountAmount = discount,
-                            voucherMessage = "Áp dụng thành công: -${String.format("%,d", discount)} đ"
+                            voucherMessage = "Đã giảm ${String.format("%,d", discount)}đ",
+                            errorMessage = null
                         )
                     }
                     is Resource.Error -> {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            errorMessage = res.message,
-                            voucherMessage = res.message
+                            errorMessage = null,
+                            voucherMessage = res.message,
+                            selectedVoucher = null,
+                            discountAmount = 0L
                         )
                     }
                     else -> {}

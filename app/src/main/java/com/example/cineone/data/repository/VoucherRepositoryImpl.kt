@@ -15,7 +15,7 @@ class VoucherRepositoryImpl(private val voucherApi: VoucherApi) : VoucherReposit
         emit(Resource.Loading)
         try {
             val response = voucherApi.getMyVouchers(tab)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data.map { it.toDomain() }))
             } else {
                 emit(Resource.Error(response.message ?: "Không tải được danh sách voucher"))
@@ -29,10 +29,17 @@ class VoucherRepositoryImpl(private val voucherApi: VoucherApi) : VoucherReposit
         emit(Resource.Loading)
         try {
             val response = voucherApi.applyVoucher(ApplyVoucherRequestDto(code, subtotal))
-            if (response.success && response.data != null) {
-                emit(Resource.Success(response.data.discountAmount))
+            val discount = response.data?.discountAmount ?: 0L
+            val isSuccess = response.isSuccess && discount > 0L
+
+            if (isSuccess) {
+                emit(Resource.Success(discount))
             } else {
-                emit(Resource.Error(response.message ?: "Voucher không hợp lệ"))
+                // Lấy câu thông báo lỗi chi tiết từ Server (Ví dụ: "Đơn hàng tối thiểu phải từ 100,000 đ")
+                val errorMsg = response.message
+                    ?: response.data?.message
+                    ?: "Đơn hàng chưa đủ điều kiện áp dụng mã này"
+                emit(Resource.Error(errorMsg))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Lỗi kiểm tra voucher"))

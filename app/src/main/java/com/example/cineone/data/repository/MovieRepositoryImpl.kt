@@ -53,7 +53,7 @@ class MovieRepositoryImpl(private val movieApi: MovieApi) : MovieRepository {
 
         try {
             val response = movieApi.getMovies(q = q, status = status, genreId = genreId, page = page, size = size)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val domainList = response.data.map { it.toDomain() }
                 val ts = System.currentTimeMillis()
                 queryMemoryCache[cacheKey] = ts to domainList
@@ -87,7 +87,7 @@ class MovieRepositoryImpl(private val movieApi: MovieApi) : MovieRepository {
         emit(Resource.Loading)
         try {
             val response = movieApi.getMovieDetail(movieId)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val domain = response.data.toDomain()
                 detailMemoryCache[movieId] = System.currentTimeMillis() to domain
                 emit(Resource.Success(domain))
