@@ -22,5 +22,6 @@ fun VoucherDto.toDomain(): Voucher = Voucher(
     expiryDisplay = expiryDisplay ?: ("HSD: " + (endAt ?: "")),
     periodDisplay = periodDisplay ?: "",
     remainingUsage = remainingUsage ?: 999,
-    tab = tab ?: "AVAILABLE"
+    tab = tab ?: "AVAILABLE",
+    applicableTierNames = applicableTierNames
 )

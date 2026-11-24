@@ -30,7 +30,7 @@ class BookingRepositoryImpl(private val bookingApi: BookingApi) : BookingReposit
                 voucherCode = voucherCode
             )
             val response = bookingApi.createBooking(request)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data.toDomain()))
             } else {
                 emit(Resource.Error(response.message ?: "Đặt vé thất bại"))

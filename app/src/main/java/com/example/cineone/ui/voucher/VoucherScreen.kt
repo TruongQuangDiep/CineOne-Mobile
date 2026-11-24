@@ -223,6 +223,11 @@ fun VoucherScreen(
                     if (v.periodDisplay.isNotBlank()) {
                         VoucherDetailRow("Thời gian sử dụng:", v.periodDisplay)
                     }
+                    if (v.applicableTierNames.isNotEmpty()) {
+                        VoucherDetailRow("Hạng áp dụng:", v.applicableTierNames.joinToString(", "))
+                    } else {
+                        VoucherDetailRow("Hạng áp dụng:", "Mọi hạng thành viên")
+                    }
                     VoucherDetailRow("Số lượt còn lại:", "Còn ${v.remainingUsage} lượt sử dụng")
                     if (!v.description.isNullOrBlank()) {
                         VoucherDetailRow("Mô tả:", v.description)
@@ -307,6 +312,16 @@ fun VoucherCardItem(
             Text(text = voucher.discountDisplay, color = CineRedPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             Text(text = voucher.minOrderDisplay, color = CineTextGray, fontSize = 12.sp)
             Text(text = "Mã: ${voucher.code}", color = CineTextWhite, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+            if (voucher.applicableTierNames.isNotEmpty()) {
+                Text(
+                    text = "Áp dụng: ${voucher.applicableTierNames.joinToString(", ")}",
+                    color = Color(0xFFFFB300), // Màu vàng nổi bật
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 11.sp
+                )
+            } else {
+                Text(text = "Áp dụng: Tất cả thành viên", color = CineTextMuted, fontSize = 11.sp)
+            }
             Text(text = voucher.expiryDisplay, color = CineTextMuted, fontSize = 11.sp)
 
             Spacer(modifier = Modifier.height(12.dp))

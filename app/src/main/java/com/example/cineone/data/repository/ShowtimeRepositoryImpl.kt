@@ -33,7 +33,7 @@ class ShowtimeRepositoryImpl(private val showtimeApi: ShowtimeApi) : ShowtimeRep
                 date = date,
                 page = page
             )
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val mapped = response.data.map { it.toDomain() }
                 showtimeMemoryCache[cacheKey] = System.currentTimeMillis() to mapped
                 emit(Resource.Success(mapped))

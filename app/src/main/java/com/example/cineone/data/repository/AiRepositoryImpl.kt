@@ -104,7 +104,7 @@ class AiRepositoryImpl(
 
     private suspend fun handleFaqIntent(question: String): AiMessage {
         val response = aiApi.askFaq(question)
-        if (response.success && response.data != null) {
+        if (response.isSuccess && response.data != null) {
             val dto = response.data
             val answerText = dto.answer.trim().ifBlank {
                 "Trợ lý CineOne chưa tìm thấy câu trả lời phù hợp trong cơ sở tri thức."
@@ -185,7 +185,7 @@ class AiRepositoryImpl(
         }
 
         val response = aiApi.getMovieReviewSummary(matchedMovie.movieId)
-        if (response.success && response.data != null) {
+        if (response.isSuccess && response.data != null) {
             val summaryModel = AiMessageMapper.mapReviewSummary(response.data, matchedMovie)
             val criteriaForMovie = AiExtractedCriteria(
                 movieTitle = matchedMovie.title,
@@ -237,7 +237,7 @@ class AiRepositoryImpl(
 
         val remoteExtracted = runCatching {
             val resp = aiApi.extractSearchCriteria(rawQuery)
-            if (resp.success && resp.data != null) {
+            if (resp.isSuccess && resp.data != null) {
                 AiMessageMapper.mapSearchCriteria(resp.data)
             } else {
                 null

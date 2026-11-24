@@ -319,10 +319,17 @@ fun HomeScreen(
             promotion = popupVoucher,
             onDismiss = { hasDismissedPopupVoucher = true },
             onCopyCode = { code ->
-                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                cm?.setPrimaryClip(ClipData.newPlainText("voucher_code", code))
-                Toast.makeText(context, "Đã sao chép mã $code vào bộ nhớ tạm!", Toast.LENGTH_SHORT).show()
+                // Đóng popup
                 hasDismissedPopupVoucher = true
+
+                // Lưu mã đã chọn vào session để màn hình Voucher tự mở chi tiết
+                context.getSharedPreferences("cineone_session", Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("selected_voucher_code", code)
+                    .apply()
+
+                // Điều hướng thẳng vào màn hình Ví Voucher của tôi
+                navController.navigate(Screen.VoucherList.route)
             }
         )
     }

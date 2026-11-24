@@ -54,7 +54,7 @@ class CinemaRepositoryImpl(private val cinemaApi: CinemaApi) : CinemaRepository 
         emit(Resource.Loading)
         try {
             val response = cinemaApi.getCinemas(q = q, city = city, status = status, page = page)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val domainList = response.data.map { it.toDomain() }
                 val fetchTime = System.currentTimeMillis()
                 pageMemoryCache[cacheKey] = fetchTime to domainList
@@ -86,7 +86,7 @@ class CinemaRepositoryImpl(private val cinemaApi: CinemaApi) : CinemaRepository 
         emit(Resource.Loading)
         try {
             val response = cinemaApi.getCinemaDetail(cinemaId)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data.toDomain()))
             } else {
                 emit(Resource.Error(response.message ?: "Không tìm thấy chi tiết rạp"))
@@ -106,7 +106,7 @@ class CinemaRepositoryImpl(private val cinemaApi: CinemaApi) : CinemaRepository 
         emit(Resource.Loading)
         try {
             val response = cinemaApi.getCinemaFnbs(cinemaId)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val mapped = response.data.map { it.toDomain() }
                 fnbMemoryCache[cinemaId] = System.currentTimeMillis() to mapped
                 emit(Resource.Success(mapped))

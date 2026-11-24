@@ -24,7 +24,8 @@ data class VoucherDto(
     val expiryDisplay: String? = null,
     val periodDisplay: String? = null,
     val remainingUsage: Int? = null,
-    val tab: String? = null
+    val tab: String? = null,
+    val applicableTierNames: List<String> = emptyList()
 )
 
 @Serializable
@@ -35,6 +36,7 @@ data class ApplyVoucherRequestDto(
 
 @Serializable
 data class ApplyVoucherResponseDto(
+    val success: Boolean = false,
     val code: String = "",
     val discountAmount: Long = 0L,
     val finalAmount: Long = 0L,

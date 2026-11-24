@@ -19,5 +19,6 @@ data class Voucher(
     val expiryDisplay: String = "",
     val periodDisplay: String = "",
     val remainingUsage: Int = 999,
-    val tab: String = "AVAILABLE"
+    val tab: String = "AVAILABLE",
+    val applicableTierNames: List<String> = emptyList()
 )

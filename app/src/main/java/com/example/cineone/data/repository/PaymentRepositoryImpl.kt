@@ -14,7 +14,7 @@ class PaymentRepositoryImpl(private val paymentApi: PaymentApi) : PaymentReposit
         emit(Resource.Loading)
         try {
             val response = paymentApi.createPaymentLink(bookingId)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data))
             } else {
                 emit(Resource.Error(response.message ?: "Không thể tạo mã VietQR thanh toán"))
@@ -27,7 +27,7 @@ class PaymentRepositoryImpl(private val paymentApi: PaymentApi) : PaymentReposit
     override fun getPaymentStatus(bookingId: Long): Flow<Resource<PaymentStatusDto>> = flow {
         try {
             val response = paymentApi.getPaymentStatus(bookingId)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data))
             } else {
                 emit(Resource.Error(response.message ?: "Không lấy được trạng thái thanh toán"))

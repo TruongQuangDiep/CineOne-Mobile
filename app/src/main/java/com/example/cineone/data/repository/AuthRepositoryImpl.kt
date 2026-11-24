@@ -24,7 +24,7 @@ class AuthRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = authApi.login(LoginRequestDto(email, pass))
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val authData = response.data
                 authData.token?.let { token ->
                     sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
@@ -50,7 +50,7 @@ class AuthRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = authApi.register(RegisterRequestDto(email, pass, name, phone))
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val authData = response.data
                 authData.token?.let { token ->
                     sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
@@ -71,7 +71,7 @@ class AuthRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = authApi.verifyOtp(OtpVerificationDto(email = email, otp = otp, type = type))
-            if (response.success) {
+            if (response.isSuccess) {
                 emit(Resource.Success(Unit))
             } else {
                 emit(Resource.Error(response.message ?: "Mã OTP không đúng hoặc đã hết hạn"))
@@ -85,7 +85,7 @@ class AuthRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = authApi.getProfile()
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val remoteUser = response.data.toDomain()
                 val mergedUser = remoteUser.copy(
                     dateOfBirth = remoteUser.dateOfBirth?.takeIf { it.isNotBlank() }
@@ -132,7 +132,7 @@ class AuthRepositoryImpl(
                 phoneVerified = phoneVerified
             )
             val response = authApi.updateProfile(requestDto)
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 val remoteUser = response.data.toDomain()
                 val updatedUser = remoteUser.copy(
                     dateOfBirth = remoteUser.dateOfBirth?.takeIf { it.isNotBlank() }
@@ -154,7 +154,7 @@ class AuthRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = authApi.forgotPassword(email)
-            if (response.success) {
+            if (response.isSuccess) {
                 emit(Resource.Success(Unit))
             } else {
                 emit(Resource.Error(response.message ?: "Gửi mã OTP thất bại"))
@@ -168,7 +168,7 @@ class AuthRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = authApi.resetPassword(email, newPassword)
-            if (response.success) {
+            if (response.isSuccess) {
                 emit(Resource.Success(Unit))
             } else {
                 emit(Resource.Error(response.message ?: "Đặt lại mật khẩu thất bại"))

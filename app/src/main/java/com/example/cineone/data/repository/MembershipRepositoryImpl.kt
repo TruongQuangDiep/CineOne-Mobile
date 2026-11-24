@@ -15,7 +15,7 @@ class MembershipRepositoryImpl(
         emit(Resource.Loading)
         try {
             val response = membershipApi.getMyMembership()
-            if (response.success && response.data != null) {
+            if (response.isSuccess && response.data != null) {
                 emit(Resource.Success(response.data))
             } else {
                 emit(Resource.Error(response.message ?: "Không tải được thông tin hạng thành viên"))
