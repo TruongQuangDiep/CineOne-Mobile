@@ -73,29 +73,21 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // [Logo] theo đúng bản phác thảo wireframe
+            // Logo CineOne phóng to
             Image(
                 painter = painterResource(id = R.drawable.logo_c1),
                 contentDescription = "CineOne Logo",
                 modifier = Modifier
-                    .size(76.dp)
-                    .clip(RoundedCornerShape(18.dp))
+                    .size(160.dp)
+                    .clip(RoundedCornerShape(32.dp))
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // CineOne & Slogan
-            Text(
-                text = "CineOne",
-                color = CineRedPrimary,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+            // Chỉ giữ lại Slogan
             Text(
                 text = "Đặt vé đa rạp thông minh AI",
                 color = CineTextGray,
-                fontSize = 14.sp
+                fontSize = 16.sp
             )
 
             Spacer(modifier = Modifier.height(36.dp))

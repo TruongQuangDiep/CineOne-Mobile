@@ -7,7 +7,9 @@ data class PaymentLinkResponseDto(
     val orderCode: Long = 0L,
     val checkoutUrl: String = "",
     val qrCode: String = "",
-    val status: String = ""
+    val status: String = "",
+    val expiredAt: Long? = null,
+    val remainingSeconds: Long? = null
 )
 
 @Serializable

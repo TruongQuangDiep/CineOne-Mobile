@@ -119,5 +119,14 @@ class SessionManager(context: Context) {
         prefs.edit().clear().apply()
     }
 
+    fun isPhoneVerified(): Boolean = prefs.getBoolean(KEY_USER_PHONE_VERIFIED, false)
+    fun setPhoneVerified(phone: String, verified: Boolean = true) {
+        prefs.edit().apply {
+            putString(KEY_USER_PHONE, phone)
+            putBoolean(KEY_USER_PHONE_VERIFIED, verified)
+            apply()
+        }
+    }
+
     fun isLoggedIn(): Boolean = !fetchAuthToken().isNullOrBlank()
 }

@@ -624,5 +624,9 @@ fun AppNavGraph(
                 notificationId = notificationId
             )
         }
+
+        composable(Screen.OnboardingSurvey.route) {
+            com.example.cineone.ui.auth.OnboardingSurveyScreen(navController = navController)
+        }
     }
 }

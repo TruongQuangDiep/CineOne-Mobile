@@ -17,4 +17,8 @@ class PaymentApi(private val client: HttpClient) {
     suspend fun getPaymentStatus(bookingId: Long): ApiResponseDto<PaymentStatusDto> {
         return client.get("${ApiConfig.Payment.STATUS}/$bookingId").body()
     }
+
+    suspend fun cancelPayment(bookingId: Long, expired: Boolean = false): ApiResponseDto<Unit> {
+        return client.post("${ApiConfig.Payment.CANCEL}/$bookingId?expired=$expired").body()
+    }
 }

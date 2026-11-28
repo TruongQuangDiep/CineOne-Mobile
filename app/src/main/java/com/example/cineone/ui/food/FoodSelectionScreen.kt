@@ -31,6 +31,18 @@ import com.example.cineone.ui.common.FoodListSkeleton
 import com.example.cineone.ui.theme.*
 import java.text.DecimalFormat
 import com.example.cineone.navigation.Screen
+import android.graphics.BitmapFactory
+import android.util.LruCache
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -298,6 +310,8 @@ fun FoodSelectionScreen(
 }
 
 // Card món bắp nước kèm nút tăng/giảm số lượng
+
+private val fnbImageCache = LruCache<String, ImageBitmap>(30)
 @Composable
 fun FnbItemCard(
     item: Fnb,
@@ -320,7 +334,43 @@ fun FnbItemCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon / Ảnh minh họa món ăn
+            // Ảnh minh họa món ăn (fallback sang icon nếu không có ảnh hoặc tải lỗi)
+            val cleanImageUrl = item.imageUrl.trim()
+            val isRemoteUrl = cleanImageUrl.startsWith("http://") || cleanImageUrl.startsWith("https://")
+            val itemBitmap by produceState<ImageBitmap?>(
+                initialValue = if (isRemoteUrl) fnbImageCache.get(cleanImageUrl) else null,
+                key1 = cleanImageUrl
+            ) {
+                if (!isRemoteUrl) {
+                    value = null
+                    return@produceState
+                }
+                val cached = fnbImageCache.get(cleanImageUrl)
+                if (cached != null) {
+                    value = cached
+                    return@produceState
+                }
+                val loaded = withContext(Dispatchers.IO) {
+                    try {
+                        val connection = (URL(cleanImageUrl).openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 5000
+                            readTimeout = 5000
+                            instanceFollowRedirects = true
+                            setRequestProperty("User-Agent", "Mozilla/5.0")
+                            doInput = true
+                        }
+                        connection.inputStream.use { stream ->
+                            BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                        }
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+                if (loaded != null) {
+                    fnbImageCache.put(cleanImageUrl, loaded)
+                    value = loaded
+                }
+            }
             Box(
                 modifier = Modifier
                     .size(68.dp)
@@ -328,12 +378,21 @@ fun FnbItemCard(
                     .background(CineInputBackground),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Fastfood,
-                    contentDescription = null,
-                    tint = CineRedPrimary,
-                    modifier = Modifier.size(34.dp)
-                )
+                if (itemBitmap != null) {
+                    Image(
+                        bitmap = itemBitmap!!,
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Fastfood,
+                        contentDescription = item.name,
+                        tint = CineRedPrimary,
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))

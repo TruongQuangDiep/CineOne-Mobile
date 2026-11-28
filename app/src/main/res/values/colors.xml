@@ -9,4 +9,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="cine_background_dark">#FF0F1014</color>
     <color name="cine_splash_green">#FF07C160</color>
+    <color name="ic_launcher_background">#0F1014</color>
 </resources>

@@ -1497,6 +1497,14 @@ fun ProfileDetailScreen(
     var isEditingName by remember { mutableStateOf(false) }
     var isEditingPhone by remember { mutableStateOf(false) }
     var isEditingDob by remember { mutableStateOf(false) }
+    var showPhoneVerificationDialog by remember { mutableStateOf(false) }
+    var verifyPhoneNumber by remember { mutableStateOf("") }
+    var verifyOtpCode by remember { mutableStateOf("") }
+    var isOtpSent by remember { mutableStateOf(false) }
+    var phoneError by remember { mutableStateOf<String?>(null) }
+    var isVerifyingPhone by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val authRepo = remember { com.example.cineone.CineOneApp.instance.repositoryModule.authRepository }
     var avatarUriStr by remember { mutableStateOf(sessionManager.fetchUserAvatarUri()) }
     val avatarBitmap = rememberAvatarBitmap(context, avatarUriStr)
 
@@ -1819,19 +1827,15 @@ fun ProfileDetailScreen(
                                                 verified = isPhoneVerified,
                                                 onClick = {
                                                     if (!isPhoneVerified) {
-                                                        isPhoneVerified = true
-                                                        authViewModel.updateProfile(
-                                                            fullName = fullName.trim(),
-                                                            phone = phone.trim(),
-                                                            address = address.trim().ifBlank { null },
-                                                            dateOfBirth = dateOfBirth.trim().ifBlank { null },
-                                                            phoneVerified = true
-                                                        )
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Đã xác minh số điện thoại thành công",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
+                                                        if (phone.trim().length < 9) {
+                                                            Toast.makeText(context, "Vui lòng nhập số điện thoại hợp lệ trước khi xác minh", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            verifyPhoneNumber = phone.trim()
+                                                            verifyOtpCode = ""
+                                                            isOtpSent = false
+                                                            phoneError = null
+                                                            showPhoneVerificationDialog = true
+                                                        }
                                                     }
                                                 }
                                             )
@@ -2010,6 +2014,149 @@ fun ProfileDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    // DIALOG XÁC THỰC SỐ ĐIỆN THOẠI QUA TWILIO SMS
+    if (showPhoneVerificationDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isVerifyingPhone) showPhoneVerificationDialog = false },
+            containerColor = CineSurfaceCard,
+            title = {
+                Text(
+                    text = if (!isOtpSent) "Xác thực số điện thoại" else "Nhập mã OTP SMS",
+                    color = CineTextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = if (!isOtpSent)
+                            "Để bảo mật tài khoản, CineOne sẽ gửi mã OTP gồm 6 chữ số qua tin nhắn SMS tới số ${verifyPhoneNumber}."
+                        else
+                            "Mã OTP đã được gửi đến số ${verifyPhoneNumber}. Vui lòng nhập mã để hoàn tất xác thực.",
+                        color = CineTextGray,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    if (!isOtpSent) {
+                        OutlinedTextField(
+                            value = verifyPhoneNumber,
+                            onValueChange = { verifyPhoneNumber = it; phoneError = null },
+                            placeholder = { Text("Nhập số điện thoại (VD: 0912345678)", color = CineTextMuted, fontSize = 13.sp) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = CineInputBackground,
+                                unfocusedContainerColor = CineInputBackground,
+                                focusedBorderColor = CineRedPrimary,
+                                unfocusedBorderColor = CineBorder,
+                                focusedTextColor = CineTextWhite,
+                                unfocusedTextColor = CineTextWhite
+                            )
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value = verifyOtpCode,
+                            onValueChange = { if (it.length <= 6) verifyOtpCode = it; phoneError = null },
+                            placeholder = { Text("Nhập 6 số OTP...", color = CineTextMuted, fontSize = 14.sp) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = CineInputBackground,
+                                unfocusedContainerColor = CineInputBackground,
+                                focusedBorderColor = CineRedPrimary,
+                                unfocusedBorderColor = CineBorder,
+                                focusedTextColor = CineTextWhite,
+                                unfocusedTextColor = CineTextWhite
+                            )
+                        )
+                    }
+                    if (phoneError != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(text = phoneError!!, color = CineRedPrimary, fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (!isOtpSent) {
+                            if (verifyPhoneNumber.trim().length < 9) {
+                                phoneError = "Số điện thoại không hợp lệ"
+                                return@Button
+                            }
+                            isVerifyingPhone = true
+                            phoneError = null
+                            coroutineScope.launch {
+                                authRepo.sendPhoneOtp(verifyPhoneNumber.trim()).collect { res ->
+                                    isVerifyingPhone = false
+                                    when (res) {
+                                        is com.example.cineone.core.common.Resource.Success -> {
+                                            isOtpSent = true
+                                        }
+                                        is com.example.cineone.core.common.Resource.Error -> {
+                                            phoneError = res.message
+                                        }
+                                        else -> {}
+                                    }
+                                }
+                            }
+                        } else {
+                            if (verifyOtpCode.trim().length < 4) {
+                                phoneError = "Vui lòng nhập mã OTP"
+                                return@Button
+                            }
+                            isVerifyingPhone = true
+                            phoneError = null
+                            val currentEmail = sessionManager.fetchUserEmail().orEmpty()
+                            coroutineScope.launch {
+                                authRepo.verifyPhoneOtp(verifyPhoneNumber.trim(), verifyOtpCode.trim(), currentEmail).collect { res ->
+                                    isVerifyingPhone = false
+                                    when (res) {
+                                        is com.example.cineone.core.common.Resource.Success -> {
+                                            showPhoneVerificationDialog = false
+                                            phone = verifyPhoneNumber.trim()
+                                            isPhoneVerified = true
+                                            sessionManager.setPhoneVerified(phone, true)
+                                            authViewModel.updateProfile(
+                                                fullName = fullName.trim(),
+                                                phone = phone,
+                                                address = address.trim().ifBlank { null },
+                                                dateOfBirth = dateOfBirth.trim().ifBlank { null },
+                                                phoneVerified = true
+                                            )
+                                            Toast.makeText(context, "Xác thực số điện thoại thành công!", Toast.LENGTH_SHORT).show()
+                                        }
+                                        is com.example.cineone.core.common.Resource.Error -> {
+                                            phoneError = res.message
+                                        }
+                                        else -> {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary),
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = !isVerifyingPhone
+                ) {
+                    if (isVerifyingPhone) {
+                        CircularProgressIndicator(color = CineTextWhite, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(if (!isOtpSent) "Gửi mã OTP" else "Xác nhận OTP", fontSize = 13.sp)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPhoneVerificationDialog = false }, enabled = !isVerifyingPhone) {
+                    Text("Hủy", color = CineTextGray, fontSize = 13.sp)
+                }
+            }
+        )
     }
 }
 

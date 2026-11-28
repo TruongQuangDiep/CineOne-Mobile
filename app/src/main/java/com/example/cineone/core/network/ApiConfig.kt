@@ -33,6 +33,8 @@ object ApiConfig {
         const val VERIFY_OTP = "/api/v1/auth/verify-otp"
         const val FORGOT_PASSWORD = "/api/v1/auth/forgot-password"
         const val RESET_PASSWORD = "/api/v1/auth/reset-password"
+        const val SEND_PHONE_OTP = "/api/v1/auth/phone/send-otp"
+        const val VERIFY_PHONE_OTP = "/api/v1/auth/phone/verify-otp"
     }
 
     object User {
@@ -91,6 +93,8 @@ object ApiConfig {
     object Payment {
         const val CREATE_LINK = "/api/v1/payments/create-link"
         const val STATUS = "/api/v1/payments/status"
+
+        const val CANCEL = "/api/v1/payments/cancel"
     }
 
     object Review {

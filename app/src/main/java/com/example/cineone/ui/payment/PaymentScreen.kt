@@ -38,6 +38,8 @@ import kotlinx.coroutines.withContext
 import java.net.URL
 import java.net.URLEncoder
 import java.text.DecimalFormat
+import androidx.activity.compose.BackHandler
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +56,19 @@ fun PaymentScreen(
     val context = LocalContext.current
     val currencyFormatter = remember { DecimalFormat("#,### đ") }
     var copiedText by remember { mutableStateOf<String?>(null) }
+    var showCancelDialog by remember { mutableStateOf(false) }
+
+    fun navigateBackToSeatSelection() {
+        val poppedToSeat = navController.popBackStack(Screen.SeatSelection.route, inclusive = false)
+        if (!poppedToSeat) {
+            navController.popBackStack()
+        }
+    }
+    BackHandler(enabled = !uiState.isPaid && !uiState.isExpired) {
+        if (!uiState.isCancelling) {
+            showCancelDialog = true
+        }
+    }
 
     LaunchedEffect(bookingId) {
         viewModel.initPayment(
@@ -89,7 +104,11 @@ fun PaymentScreen(
             TopAppBar(
                 title = { Text("Quét mã VietQR", color = CineTextWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (!uiState.isPaid && !uiState.isExpired && !uiState.isCancelling) {
+                            showCancelDialog = true
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = CineTextWhite)
                     }
                 },
@@ -149,6 +168,21 @@ fun PaymentScreen(
 
                     if (uiState.isLoading) {
                         QrCodeSkeleton(modifier = Modifier.size(220.dp))
+                    } else if (!uiState.errorMessage.isNullOrBlank() && uiState.qrCode.isBlank() && uiState.checkoutUrl.isBlank()) {
+                        Text(
+                            text = uiState.errorMessage!!,
+                            color = CineError,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { viewModel.initPayment(bookingId, bookingCode, amount, movieTitle) },
+                            colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary)
+                        ) {
+                            Text("Thử lại", color = CineTextWhite)
+                        }
                     } else {
                         // Render ảnh QR từ qrCode string
                         val qrData = uiState.qrCode.ifBlank { uiState.checkoutUrl }
@@ -220,6 +254,16 @@ fun PaymentScreen(
                     fontSize = 13.sp
                 )
             }
+
+            OutlinedButton(
+                onClick = { showCancelDialog = true },
+                enabled = !uiState.isCancelling && !uiState.isPaid,
+                border = BorderStroke(1.dp, CineBorder),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Hủy thanh toán", color = CineTextGray)
+            }
         }
     }
 
@@ -232,12 +276,51 @@ fun PaymentScreen(
             text = { Text("Suất chiếu và ghế đã được giải phóng. Vui lòng quay lại để chọn ghế mới.", color = CineTextWhite) },
             confirmButton = {
                 Button(
-                    onClick = {
-                        navController.popBackStack()
-                    },
+                    onClick = { navigateBackToSeatSelection() },
                     colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary)
                 ) {
                     Text("Chọn lại ghế")
+                }
+            }
+        )
+    }
+    // Dialog xác nhận hủy giao dịch khi bấm Back hoặc Hủy thanh toán
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!uiState.isCancelling) showCancelDialog = false },
+            containerColor = CineSurfaceCard,
+            title = { Text("Hủy thanh toán?", color = CineTextWhite, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Nếu thoát bây giờ, mã VietQR sẽ bị hủy trên payOS và ghế bạn chọn sẽ được giải phóng cho người khác.",
+                    color = CineTextGray
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.cancelPayment {
+                            showCancelDialog = false
+                            Toast.makeText(context, "Đã hủy giao dịch", Toast.LENGTH_SHORT).show()
+                            navigateBackToSeatSelection()
+                        }
+                    },
+                    enabled = !uiState.isCancelling,
+                    colors = ButtonDefaults.buttonColors(containerColor = CineRedPrimary)
+                ) {
+                    if (uiState.isCancelling) {
+                        CircularProgressIndicator(color = CineTextWhite, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Hủy giao dịch")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showCancelDialog = false },
+                    enabled = !uiState.isCancelling
+                ) {
+                    Text("Tiếp tục thanh toán", color = CineTextWhite)
                 }
             }
         )
@@ -258,12 +341,14 @@ fun QrCodeImage(qrData: String, modifier: Modifier = Modifier) {
                     val url = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$encoded"
                     val stream = URL(url).openStream()
                     val bitmap = BitmapFactory.decodeStream(stream)
-                    imageBitmap = bitmap.asImageBitmap()
+                    imageBitmap = bitmap?.asImageBitmap()
                 } catch (_: Exception) { }
                 finally {
                     isLoading = false
                 }
             }
+        } else {
+            isLoading = false
         }
     }
 

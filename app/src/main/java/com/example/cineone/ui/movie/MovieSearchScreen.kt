@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -52,6 +53,16 @@ import com.example.cineone.ui.common.ErrorView
 import com.example.cineone.ui.common.MovieGridSkeleton
 import com.example.cineone.ui.common.ShowtimeListSkeleton
 import com.example.cineone.ui.showtime.DateItem
+import android.graphics.BitmapFactory
+import android.util.LruCache
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 import com.example.cineone.ui.theme.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -596,7 +607,8 @@ private fun CinemaTabSection(
                     // Biểu tượng rạp
                     CinemaBrandBadgeBox(
                         brandName = cinema.brandName,
-                        cinemaName = cinema.name
+                        cinemaName = cinema.name,
+                        logoUrl = cinema.brandLogoUrl
                     )
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -1207,12 +1219,53 @@ private fun GenreChipItem(
     }
 }
 
+private val brandLogoCache = LruCache<String, ImageBitmap>(20)
+
 @Composable
 fun CinemaBrandBadgeBox(
     brandName: String,
     cinemaName: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    logoUrl: String = "",
+    isSelected: Boolean = false,
+    boxSize: Dp = 44.dp
 ) {
+    val cleanUrl = logoUrl.trim()
+    val isRemoteUrl = cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")
+    val logoBitmap by produceState<ImageBitmap?>(
+        initialValue = if (isRemoteUrl) brandLogoCache.get(cleanUrl) else null,
+        key1 = cleanUrl
+    ) {
+        if (!isRemoteUrl) {
+            value = null
+            return@produceState
+        }
+        val cached = brandLogoCache.get(cleanUrl)
+        if (cached != null) {
+            value = cached
+            return@produceState
+        }
+        val loaded = withContext(Dispatchers.IO) {
+            try {
+                val connection = (URL(cleanUrl).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 5000
+                    readTimeout = 5000
+                    instanceFollowRedirects = true
+                    doInput = true
+                }
+                connection.inputStream.use { stream ->
+                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (loaded != null) {
+            brandLogoCache.put(cleanUrl, loaded)
+            value = loaded
+        }
+    }
+
     val shortBrand = remember(brandName, cinemaName) {
         val raw = brandName.ifBlank { cinemaName }.trim()
         when {
@@ -1229,26 +1282,45 @@ fun CinemaBrandBadgeBox(
 
     Box(
         modifier = modifier
-            .size(44.dp)
+            .size(boxSize)
             .clip(RoundedCornerShape(10.dp))
-            .background(CineInputBackground)
-            .border(1.dp, CineBorder, RoundedCornerShape(10.dp)),
+            .background(
+                if (logoBitmap != null) Color.White
+                else if (isSelected) CineRedPrimary.copy(alpha = 0.2f)
+                else CineInputBackground
+            )
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) CineRedPrimary else CineBorder,
+                shape = RoundedCornerShape(10.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Default.Theaters,
-                contentDescription = null,
-                tint = CineRedPrimary,
-                modifier = Modifier.size(16.dp)
+        if (logoBitmap != null) {
+            Image(
+                bitmap = logoBitmap!!,
+                contentDescription = brandName.ifBlank { cinemaName },
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(4.dp)
             )
-            Text(
-                text = shortBrand,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = CineTextWhite,
-                maxLines = 1
-            )
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.Theaters,
+                    contentDescription = null,
+                    tint = CineRedPrimary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = shortBrand,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = CineTextWhite,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

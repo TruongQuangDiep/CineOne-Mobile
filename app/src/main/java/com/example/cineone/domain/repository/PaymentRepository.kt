@@ -8,4 +8,5 @@ import kotlinx.coroutines.flow.Flow
 interface PaymentRepository {
     fun createPaymentLink(bookingId: Long): Flow<Resource<PaymentLinkResponseDto>>
     fun getPaymentStatus(bookingId: Long): Flow<Resource<PaymentStatusDto>>
+    fun cancelPayment(bookingId: Long, expired: Boolean = false): Flow<Resource<Unit>>
 }

@@ -21,7 +21,7 @@ class AuthApi(private val client: HttpClient) {
         }.body()
     }
 
-    suspend fun verifyOtp(request: OtpVerificationDto): ApiResponseDto<Unit> {
+    suspend fun verifyOtp(request: OtpVerificationDto): ApiResponseDto<AuthResponseDto?> {
         return client.post(ApiConfig.Auth.VERIFY_OTP) {
             setBody(request)
         }.body()
@@ -46,6 +46,18 @@ class AuthApi(private val client: HttpClient) {
     suspend fun resetPassword(email: String, newPassword: String): ApiResponseDto<Unit> {
         return client.post(ApiConfig.Auth.RESET_PASSWORD) {
             setBody(ResetPasswordRequestDto(email, newPassword))
+        }.body()
+    }
+
+    suspend fun sendPhoneOtp(phone: String): ApiResponseDto<Unit> {
+        return client.post(ApiConfig.Auth.SEND_PHONE_OTP) {
+            setBody(mapOf("phone" to phone))
+        }.body()
+    }
+
+    suspend fun verifyPhoneOtp(phone: String, otp: String, email: String): ApiResponseDto<Unit> {
+        return client.post(ApiConfig.Auth.VERIFY_PHONE_OTP) {
+            setBody(mapOf("phone" to phone, "otp" to otp, "email" to email))
         }.body()
     }
 }

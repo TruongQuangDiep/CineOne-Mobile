@@ -175,6 +175,8 @@ sealed class Screen(val route: String) {
     object NotificationDetail : Screen("notification_detail/{notificationId}") {
         fun createRoute(notificationId: Long) = "notification_detail/$notificationId"
     }
+
+    object OnboardingSurvey : Screen("onboarding_survey")
 }
 
 private fun encodeParam(value: String): String {
