@@ -222,38 +222,59 @@ fun ShowtimeScreen(
             if (uiState.availableBrands.size > 1) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(uiState.availableBrands, key = { it }) { brand ->
                         val selected = uiState.selectedBrand == brand
-                        Row(
+                        val brandLogoUrl = uiState.brandLogos[brand].orEmpty()
+
+                        Column(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (selected) CineRedPrimary.copy(alpha = 0.2f)
-                                    else CineInputBackground
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = if (selected) CineRedPrimary else CineBorder,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .clickable { viewModel.onBrandSelected(brand) }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .width(64.dp)
+                                .clickable { viewModel.onBrandSelected(brand) },
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Theaters,
-                                contentDescription = null,
-                                tint = if (selected) CineRedPrimary else CineTextGray,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            if (brand == "Đề xuất") {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (selected) CineRedPrimary.copy(alpha = 0.2f)
+                                            else CineInputBackground
+                                        )
+                                        .border(
+                                            width = if (selected) 2.dp else 1.dp,
+                                            color = if (selected) CineRedPrimary else CineBorder,
+                                            shape = RoundedCornerShape(10.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Theaters,
+                                        contentDescription = brand,
+                                        tint = if (selected) CineRedPrimary else CineTextGray,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            } else {
+                                CinemaBrandBadgeBox(
+                                    brandName = brand,
+                                    cinemaName = brand,
+                                    logoUrl = brandLogoUrl,
+                                    isSelected = selected,
+                                    boxSize = 48.dp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = brand,
                                 fontSize = 11.sp,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selected) CineTextWhite else CineTextGray
+                                color = if (selected) CineTextWhite else CineTextGray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -476,6 +497,7 @@ fun ShowtimeScreen(
                                 CinemaShowtimeCard(
                                     cinemaName = group.cinemaName,
                                     brandName = group.brandName,
+                                    brandLogoUrl = group.brandLogoUrl,
                                     address = group.address,
                                     distanceKm = group.distanceKm,
                                     showtimes = group.showtimes,
@@ -550,6 +572,7 @@ fun CinemaShowtimeCard(
     showtimes: List<Showtime>,
     onShowtimeClick: (Showtime) -> Unit,
     brandName: String = "",
+    brandLogoUrl: String = "",
     address: String = "",
     distanceKm: Double? = null
 ) {
@@ -564,7 +587,8 @@ fun CinemaShowtimeCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CinemaBrandBadgeBox(
                     brandName = brandName,
-                    cinemaName = cinemaName
+                    cinemaName = cinemaName,
+                    logoUrl = brandLogoUrl
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {

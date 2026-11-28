@@ -18,4 +18,6 @@ interface AuthRepository {
     ): Flow<Resource<User>>
     fun forgotPassword(email: String): Flow<Resource<Unit>>
     fun resetPassword(email: String, newPassword: String): Flow<Resource<Unit>>
+    fun sendPhoneOtp(phone: String): Flow<Resource<Unit>>
+    fun verifyPhoneOtp(phone: String, otp: String, email: String): Flow<Resource<Unit>>
 }

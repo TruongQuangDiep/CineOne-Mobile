@@ -39,7 +39,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 fun SplashScreen(
     navController: NavController
 ) {
-    val splashGreen = Color(0xFF07C160)
+    val splashBg = Color(0xFF0F1014)
     val context = LocalContext.current
     val view = LocalView.current
 
@@ -58,11 +58,10 @@ fun SplashScreen(
 
     DisposableEffect(view) {
         val window = (view.context as? Activity)?.window
-        val greenArgb = splashGreen.toArgb()
-        window?.statusBarColor = greenArgb
-        window?.navigationBarColor = greenArgb
+        val darkArgb = splashBg.toArgb()
+        window?.statusBarColor = darkArgb
+        window?.navigationBarColor = darkArgb
         onDispose {
-            val darkArgb = 0xFF0F1014.toInt()
             window?.setBackgroundDrawableResource(R.color.cine_background_dark)
             window?.statusBarColor = darkArgb
             window?.navigationBarColor = darkArgb
@@ -114,7 +113,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(splashGreen),
+            .background(splashBg),
         contentAlignment = Alignment.Center
     ) {
         Image(

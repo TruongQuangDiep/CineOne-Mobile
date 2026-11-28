@@ -38,6 +38,7 @@ data class CinemaShowtimeGroupItem(
     val cinemaId: Long,
     val cinemaName: String,
     val brandName: String,
+    val brandLogoUrl: String = "",
     val address: String,
     val city: String,
     val distanceKm: Double? = null,
@@ -50,6 +51,7 @@ data class ShowtimeUiState(
     val selectedDate: String = "",
     val selectedTimeSlot: TimeSlotFilter = TimeSlotFilter.ALL,
     val availableBrands: List<String> = listOf("Đề xuất"),
+    val brandLogos: Map<String, String> = emptyMap(),
     val selectedBrand: String = "Đề xuất",
     val availableCities: List<String> = emptyList(),
     val locationMode: LocationFilterMode = LocationFilterMode.NONE,
@@ -368,9 +370,13 @@ class ShowtimeViewModel(
                     canonicalBrand.takeIf { it != "Đề xuất" }
                 )).distinct()
 
+                val brandLogosMap = allCinemas
+                    .filter { it.brandName.isNotBlank() && it.brandLogoUrl.isNotBlank() }
+                    .associate { it.brandName.trim() to it.brandLogoUrl.trim() }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     availableBrands = mergedBrands,
+                    brandLogos = brandLogosMap,
                     selectedBrand = canonicalBrand,
                     availableCities = cities,
                     selectedCity = resolvedCity,
@@ -441,6 +447,7 @@ class ShowtimeViewModel(
                     cinemaId = cinemaId,
                     cinemaName = cName,
                     brandName = bName,
+                    brandLogoUrl = cinemaObj?.brandLogoUrl.orEmpty(),
                     address = cinemaObj?.address.orEmpty(),
                     city = cinemaObj?.city.orEmpty(),
                     distanceKm = distItem?.distanceKm,

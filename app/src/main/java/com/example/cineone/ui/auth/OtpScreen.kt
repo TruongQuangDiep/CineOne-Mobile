@@ -1,5 +1,6 @@
 package com.example.cineone.ui.auth
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -60,8 +61,7 @@ fun OtpScreen(
         if (uiState.isOtpSuccess) {
             viewModel.resetState()
             if (flowType == "REGISTER") {
-                // Kích hoạt xong: Đưa về màn hình Đăng nhập
-                navController.navigate(Screen.Login.route) {
+                navController.navigate(Screen.OnboardingSurvey.route) {
                     popUpTo(Screen.Register.route) { inclusive = true }
                 }
             } else {
@@ -186,9 +186,7 @@ fun OtpScreen(
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = CineTextWhite),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(CineBorderMuted)
-                    )
+                    border = BorderStroke(1.dp, CineBorderMuted)
                 ) {
                     Text("Hủy bỏ", fontSize = 15.sp, color = CineTextWhite)
                 }

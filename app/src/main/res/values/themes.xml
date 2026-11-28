@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.CineOne" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/cine_splash_green</item>
-        <item name="android:statusBarColor">@color/cine_splash_green</item>
-        <item name="android:navigationBarColor">@color/cine_splash_green</item>
+        <!-- Nền khởi động đen đồng bộ với CineOne -->
+        <item name="android:windowBackground">@color/cine_background_dark</item>
+        <item name="android:statusBarColor">@color/cine_background_dark</item>
+        <item name="android:navigationBarColor">@color/cine_background_dark</item>
+
+        <!-- Cấu hình Splash Screen hệ thống cho Android 12+ -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="s">@color/cine_background_dark</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="s">@mipmap/ic_launcher</item>
     </style>
 </resources>

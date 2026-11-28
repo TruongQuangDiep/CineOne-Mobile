@@ -40,7 +40,9 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val sessionManager = remember { CineOneApp.instance.networkModule.sessionManager }
             val notificationRepo = remember { CineOneApp.instance.repositoryModule.notificationRepository }
-            val startDestination = Screen.Splash.route
+            val startDestination = remember {
+                if (sessionManager.isLoggedIn()) Screen.Home.route else Screen.Login.route
+            }
 
             // Xin quyền Push Notification cho Android 13+
             val permissionLauncher = rememberLauncherForActivityResult(

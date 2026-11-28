@@ -134,6 +134,11 @@ fun CinemaListScreen(
 
         // Hàng chọn thương hiệu rạp: Đề xuất | CGV | Beta | Lotte | Galaxy | Cinestar
         if (uiState.availableBrands.isNotEmpty()) {
+            val brandLogoMap = remember(uiState.allCinemas) {
+                uiState.allCinemas
+                    .filter { it.brandName.isNotBlank() && it.brandLogoUrl.isNotBlank() }
+                    .associate { it.brandName.trim() to it.brandLogoUrl.trim() }
+            }
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -141,6 +146,7 @@ fun CinemaListScreen(
             ) {
                 items(uiState.availableBrands, key = { it }) { brand ->
                     val selected = uiState.selectedBrand == brand
+                    val brandLogoUrl = brandLogoMap[brand].orEmpty()
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -149,27 +155,37 @@ fun CinemaListScreen(
                             .clickable { viewModel.selectBrand(brand) }
                             .padding(vertical = 4.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (selected) CineRedPrimary.copy(alpha = 0.2f)
-                                    else CineInputBackground
-                                )
-                                .border(
-                                    width = if (selected) 1.5.dp else 1.dp,
-                                    color = if (selected) CineRedPrimary else CineBorder,
-                                    shape = RoundedCornerShape(10.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Theaters,
-                                contentDescription = brand,
-                                tint = if (selected) CineRedPrimary else CineTextGray,
-                                modifier = Modifier.size(22.dp)
+                        if (brand != "Đề xuất" && brandLogoUrl.isNotBlank()) {
+                            CinemaBrandBadgeBox(
+                                brandName = brand,
+                                cinemaName = brand,
+                                logoUrl = brandLogoUrl,
+                                isSelected = selected,
+                                boxSize = 48.dp
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (selected) CineRedPrimary.copy(alpha = 0.2f)
+                                        else CineInputBackground
+                                    )
+                                    .border(
+                                        width = if (selected) 1.5.dp else 1.dp,
+                                        color = if (selected) CineRedPrimary else CineBorder,
+                                        shape = RoundedCornerShape(10.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Theaters,
+                                    contentDescription = brand,
+                                    tint = if (selected) CineRedPrimary else CineTextGray,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -407,7 +423,8 @@ fun CinemaListScreen(
                             ) {
                                 CinemaBrandBadgeBox(
                                     brandName = cinema.brandName,
-                                    cinemaName = cinema.name
+                                    cinemaName = cinema.name,
+                                    logoUrl = cinema.brandLogoUrl
                                 )
 
                                 Spacer(modifier = Modifier.width(12.dp))

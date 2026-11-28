@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 
 data class PaymentUiState(
     val isLoading: Boolean = false,
+    val isCancelling: Boolean = false,
     val bookingId: Long = 0L,
     val bookingCode: String = "",
     val amount: Long = 0L,
@@ -41,16 +42,17 @@ class PaymentViewModel(
     private var pollingJob: Job? = null
 
     fun initPayment(bookingId: Long, bookingCode: String, amount: Long, movieTitle: String) {
+        if (_uiState.value.bookingId == bookingId && _uiState.value.qrCode.isNotBlank()) return
         _uiState.value = _uiState.value.copy(
             bookingId = bookingId,
             bookingCode = bookingCode,
             amount = amount,
             movieTitle = movieTitle,
-            isLoading = true
+            isLoading = true,
+            errorMessage = null
         )
 
         loadPaymentLink(bookingId)
-        startCountdownTimer()
         startPaymentStatusPolling(bookingId)
     }
 
@@ -60,11 +62,19 @@ class PaymentViewModel(
                 when (res) {
                     is Resource.Success -> {
                         val data = res.data
+                        val serverRemaining = data?.remainingSeconds?.toInt() ?: 600
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             qrCode = data?.qrCode ?: "",
-                            checkoutUrl = data?.checkoutUrl ?: ""
+                            checkoutUrl = data?.checkoutUrl ?: "",
+                            remainingSeconds = serverRemaining,
+                            isExpired = serverRemaining <= 0
                         )
+                        if (serverRemaining > 0) {
+                            startCountdownTimer()
+                        } else {
+                            pollingJob?.cancel()
+                        }
                     }
                     is Resource.Error -> {
                         _uiState.value = _uiState.value.copy(
@@ -87,11 +97,19 @@ class PaymentViewModel(
                 if (newSeconds <= 0) {
                     _uiState.value = _uiState.value.copy(remainingSeconds = 0, isExpired = true)
                     pollingJob?.cancel()
+                    notifyPaymentExpired(_uiState.value.bookingId)
                     break
                 } else {
                     _uiState.value = _uiState.value.copy(remainingSeconds = newSeconds)
                 }
             }
+        }
+    }
+
+    private fun notifyPaymentExpired(bookingId: Long) {
+        if (bookingId <= 0L) return
+        viewModelScope.launch {
+            paymentRepository.cancelPayment(bookingId, expired = true).collect { }
         }
     }
 
@@ -103,9 +121,13 @@ class PaymentViewModel(
                 paymentRepository.getPaymentStatus(bookingId).collect { res ->
                     if (res is Resource.Success) {
                         val status = res.data
-                        if (status?.isPaid == true || "PAID".equals(status?.status, true) || "CONFIRMED".equals(status?.bookingStatus, true)) {
+                        if (status?.isPaid == true || "PAID".equals(status?.status, true) || "CONFIRMED".equals(status?.bookingStatus, true) || "SUCCESS".equals(status?.status, true)) {
                             _uiState.value = _uiState.value.copy(isPaid = true)
                             countdownJob?.cancel()
+                        } else if ("EXPIRED".equals(status?.status, true) || "CANCELLED".equals(status?.status, true)) {
+                            _uiState.value = _uiState.value.copy(remainingSeconds = 0, isExpired = true)
+                            countdownJob?.cancel()
+                            pollingJob?.cancel()
                         }
                     }
                 }
@@ -141,6 +163,28 @@ class PaymentViewModel(
                     else -> {
                         _uiState.value = _uiState.value.copy(isLoading = false)
                     }
+                }
+            }
+        }
+    }
+
+    fun cancelPayment(onFinished: () -> Unit) {
+        val bookingId = _uiState.value.bookingId
+        if (bookingId <= 0L || _uiState.value.isPaid) {
+            onFinished()
+            return
+        }
+        countdownJob?.cancel()
+        pollingJob?.cancel()
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isCancelling = true)
+            paymentRepository.cancelPayment(bookingId, expired = false).collect { res ->
+                when (res) {
+                    is Resource.Success, is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(isCancelling = false)
+                        onFinished()
+                    }
+                    else -> {}
                 }
             }
         }

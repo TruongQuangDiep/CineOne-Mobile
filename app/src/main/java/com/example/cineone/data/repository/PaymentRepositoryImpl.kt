@@ -36,4 +36,18 @@ class PaymentRepositoryImpl(private val paymentApi: PaymentApi) : PaymentReposit
             emit(Resource.Error(e.localizedMessage ?: "Lỗi kiểm tra trạng thái thanh toán"))
         }
     }
+
+    override fun cancelPayment(bookingId: Long, expired: Boolean): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading)
+        try {
+            val response = paymentApi.cancelPayment(bookingId, expired)
+            if (response.isSuccess) {
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(response.message ?: "Không thể hủy giao dịch"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối khi hủy giao dịch"))
+        }
+    }
 }

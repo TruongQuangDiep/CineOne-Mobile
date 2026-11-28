@@ -21,6 +21,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.example.cineone.data.dto.cinema.CinemaDto
+import com.example.cineone.data.dto.food.FnbDto
 
 class ExampleUnitTest {
     @Test
@@ -212,5 +214,28 @@ class ExampleUnitTest {
         val genres = MovieViewModel.extractGenresFromMovies(movies)
         assertEquals(listOf("Kinh dị", "Tâm lý", "Hài hước"), genres)
         assertEquals(SearchCategoryTab.GENRE, SearchCategoryTab.fromCode("GENRE"))
+    }
+    @Test
+    fun cinemaAndFnbMappers_preserveLogoAndImageUrl() {
+        val cinema = CinemaDto(
+            cinemaId = 1L,
+            brandName = "Beta Cinemas",
+            brandLogoUrl = "https://res.cloudinary.com/demo/beta.png",
+            name = "Beta Biên Hòa",
+            address = "Biên Hòa",
+            city = "Đồng Nai"
+        ).toDomain()
+
+        val fnb = FnbDto(
+            fnbId = 10L,
+            name = "Bắp Rang Bơ Ngọt",
+            price = 45000.0,
+            imageUrl = "https://images.unsplash.com/photo-1578849278619-e73505e9610f",
+            cinemaId = 1L
+        ).toDomain()
+
+        assertEquals("Beta Cinemas", cinema.brandName)
+        assertEquals("https://res.cloudinary.com/demo/beta.png", cinema.brandLogoUrl)
+        assertEquals("https://images.unsplash.com/photo-1578849278619-e73505e9610f", fnb.imageUrl)
     }
 }

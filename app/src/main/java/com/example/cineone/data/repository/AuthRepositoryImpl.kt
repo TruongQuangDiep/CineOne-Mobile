@@ -72,6 +72,15 @@ class AuthRepositoryImpl(
         try {
             val response = authApi.verifyOtp(OtpVerificationDto(email = email, otp = otp, type = type))
             if (response.isSuccess) {
+                // TỰ ĐỘNG ĐĂNG NHẬP: Lưu Token và Profile vào SessionManager
+                response.data?.let { authData ->
+                    authData.token?.let { token ->
+                        sessionManager.saveAuthToken(token, authData.user.userId, authData.user.email)
+                    }
+                    val domainUser = authData.user.toDomain()
+                    sessionManager.saveUserProfile(domainUser)
+                    AppNotificationHelper.subscribeUserTopic(CineOneApp.instance, authData.user.userId)
+                }
                 emit(Resource.Success(Unit))
             } else {
                 emit(Resource.Error(response.message ?: "Mã OTP không đúng hoặc đã hết hạn"))
@@ -124,12 +133,15 @@ class AuthRepositoryImpl(
             if (dateOfBirth != null) {
                 sessionManager.saveUserDateOfBirth(dateOfBirth)
             }
+            val currentCached = sessionManager.fetchCachedUser()
+            val safeFullName = fullName.ifBlank { currentCached?.fullName.orEmpty() }
+            val safePhone = phone ?: currentCached?.phone
             val requestDto = UserDto(
-                fullName = fullName,
-                phone = phone,
+                fullName = safeFullName,
+                phone = safePhone,
                 dateOfBirth = dateOfBirth ?: sessionManager.fetchUserDateOfBirth(),
-                address = address,
-                phoneVerified = phoneVerified
+                address = address ?: currentCached?.address,
+                phoneVerified = phoneVerified ?: sessionManager.isPhoneVerified()
             )
             val response = authApi.updateProfile(requestDto)
             if (response.isSuccess && response.data != null) {
@@ -175,6 +187,36 @@ class AuthRepositoryImpl(
             }
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối mạng"))
+        }
+    }
+
+    override fun sendPhoneOtp(phone: String): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading)
+        try {
+            val res = authApi.sendPhoneOtp(phone)
+            if (res.isSuccess) {
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(res.message ?: "Không thể gửi OTP"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối"))
+        }
+    }
+
+    override fun verifyPhoneOtp(phone: String, otp: String, email: String): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading)
+        try {
+            val res = authApi.verifyPhoneOtp(phone, otp, email)
+            if (res.isSuccess) {
+                // Cập nhật session là đã xác thực SĐT
+                sessionManager.setPhoneVerified(phone, true)
+                emit(Resource.Success(Unit))
+            } else {
+                emit(Resource.Error(res.message ?: "Mã OTP không hợp lệ"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Lỗi kết nối"))
         }
     }
 }
